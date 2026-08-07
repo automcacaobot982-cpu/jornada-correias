@@ -441,8 +441,8 @@ const OPERADORES = [
   { id:'RIQUELMI', nome:'RIQUELMI MOREIRA DOS SANTOS',senha:'@Belt102030', skin:'#fed7aa', cabelo:'#78350f', roupa:'#64748b' },
 ];
 
-// 4) TABELA DE XP (recompensas e penalidades) — já preenchida com as suas regras
-const XP  = { tetoPedido:1000, separado:10, op:10, ajuste:5, nf:50, ct:20, conferido:5, recebido:20, missaoDiaria:100 };
+// 4) TABELA DE XP (recompensas e penalidades). Cada tarefa vale 10 XP fixos.
+const XP  = { pedido:10, separado:10, op:10, ajuste:10, nf:10, ct:10, conferido:10, recebido:10, missaoDiaria:100 };
 const PEN = { atraso:500, falta:5000, rnc:1000, erroDoc:100 };
 
 // 5) META MENSAL de endereçamento (definida pelo Mestre). Chave = 'AAAA-MM'.
@@ -544,6 +544,11 @@ const MESES_PT=['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','A
 function mesLabel(k){ const [y,m]=k.split('-'); return `${MESES_PT[+m-1]} ${y}`; }
 function fmt(n){ return Math.round(n).toLocaleString('pt-BR'); }
 function fmtMoeda(n){ return n.toLocaleString('pt-BR',{style:'currency',currency:'BRL'}); }
+function fmtCompacto(n){
+  if(n>=1e6) return 'R$ '+(n/1e6).toFixed(1).replace('.',',')+' mi';
+  if(n>=1e3) return 'R$ '+Math.round(n/1e3)+' mil';
+  return 'R$ '+Math.round(n);
+}
 
 // ---------- busca no Google Sheets (endpoint gviz, público) ----------
 // Leitura via <script> (JSONP) — NÃO passa pela regra de CORS, por isso funciona
@@ -644,7 +649,7 @@ function novoBreakdown(){ return { valorPedidos:0, qtdPedidos:0, separados:0, op
 function computeTotais(mesKey, guardiaoId){
   const res = {}; OPERADORES.forEach(o=> res[o.id]={ b:novoBreakdown() });
   const B = id => res[id]?res[id].b:null;
-  DADOS.pedidos.forEach(r=>{ if(mesDe(r.data)!==mesKey) return; const b=B(r.op); if(!b) return; b.qtdPedidos++; b.valorPedidos+=Math.min(r.valor,XP.tetoPedido); });
+  DADOS.pedidos.forEach(r=>{ if(mesDe(r.data)!==mesKey) return; const b=B(r.op); if(!b) return; b.qtdPedidos++; b.valorPedidos+=r.valor; });
   DADOS.separados.forEach(r=>{ if(mesDe(r.data)!==mesKey) return; const b=B(r.op); if(!b) return; b.separados++; });
   DADOS.ops.forEach(r=>{ if(mesDe(r.data)!==mesKey) return; const b=B(r.op); if(!b) return; b.ops++; });
   DADOS.alteracoes.forEach(r=>{ if(mesDe(r.data)!==mesKey) return; ['ARTHUR','GABRIEL','LUAN','RIQUELMI'].forEach(id=>{ if(res[id]) res[id].b.ajustes += (r[id]||0); }); });
@@ -654,7 +659,7 @@ function computeTotais(mesKey, guardiaoId){
 
   OPERADORES.forEach(o=>{
     const R=res[o.id], b=R.b;
-    R.xpPedidos   = Math.round(b.valorPedidos);
+    R.xpPedidos   = b.qtdPedidos * XP.pedido;
     R.xpSeparados = b.separados*XP.separado;
     R.xpOps       = b.ops*XP.op;
     R.xpAjustes   = b.ajustes*XP.ajuste;
@@ -838,11 +843,11 @@ function renderCoordenador(){
   // Macro (totais da equipe)
   let tPed=0,vPed=0,tSep=0,tOps=0,tAju=0,tNf=0,tCt=0,tConf=0,tReceb=0;
   OPERADORES.forEach(o=>{ const b=totais[o.id].b;
-    tPed+=b.qtdPedidos; vPed+=totais[o.id].xpPedidos; tSep+=b.separados; tOps+=b.ops; tAju+=b.ajustes;
+    tPed+=b.qtdPedidos; vPed+=b.valorPedidos; tSep+=b.separados; tOps+=b.ops; tAju+=b.ajustes;
     tNf+=b.nfFatura; tCt+=b.conhecFrete; tConf+=b.conferidos; tReceb+=b.recebidos; });
   document.getElementById('coord-macro').innerHTML = `
     <div class="stat-box"><div class="stat-label">Pedidos aprovados</div><div class="stat-value">${fmt(tPed)}</div></div>
-    <div class="stat-box"><div class="stat-label">Valor→XP (pedidos)</div><div class="stat-value">${fmt(vPed)}</div></div>
+    <div class="stat-box"><div class="stat-label">Valor aprovado</div><div class="stat-value">${fmtCompacto(vPed)}</div></div>
     <div class="stat-box"><div class="stat-label">Prod. separados</div><div class="stat-value">${fmt(tSep)}</div></div>
     <div class="stat-box"><div class="stat-label">OPs finalizadas</div><div class="stat-value">${fmt(tOps)}</div></div>
     <div class="stat-box"><div class="stat-label">Prod. ajustados</div><div class="stat-value">${fmt(tAju)}</div></div>
