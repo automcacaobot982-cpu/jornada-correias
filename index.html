@@ -414,22 +414,23 @@
    ███  CONFIGURAÇÃO  —  É AQUI QUE VOCÊ EDITA  ███
    ========================================================================== */
 
-// 1) PLANILHAS (id = chave public_key 2PACX-... ; sheet = nome opcional da aba)
+// 1) PLANILHAS (id = trecho entre /d/ e /edit na URL ; gid = número da aba)
 const SHEETS = {
-  avanco:      { id:'2PACX-1vTwegUIZ4R_Iy5JUPVHTjQ4lvdNzeAvbiwp0ow-4Yfl030bscW7yuIzxeHNlNX8lWzQ35NjMObbbSV2', gid:'0' },
-  pedidos:     { id:'2PACX-1vQhB7QAgYe7WFjMDGlWby4U93-lBEl9bCF8CS0_8O-aVF3Aig-KYjHE4QJkkF5enUbeWe1xhs7CVCcs', gid:'0' },
-  separados:   { id:'2PACX-1vSSZDF--5HHGX-n9_haEEG1ciYcTV6LdDlsQMtOKpWbkbNl5ZZn0VOO3M7wXUhOsdmMGIuxGyTIzCdW', gid:'0' },
-  ops:         { id:'2PACX-1vQubI6YaeSVHpXYJh30p9Z7mpdxJGKJtUzurtqvxjbUKpsWlYRrwViEo8QyJBnKlV53fBqvsNZBj6U2', gid:'0' },
-  alteracoes:  { id:'2PACX-1vR8iekk3CbVr385IkJZ8IvErJsOIfSSZGqI9R9fApbVN9Iji9kCZJ14bYD9q0yXUDxzKbOkFl80biOR', gid:'0' },
-  documentos:  { id:'2PACX-1vQ5fpEHqIHpDN6c4eTStAIJTZoD7PTFjqjDU_ig84bzW4jLtIrhCsMhEN2gozIteRnIB2J-ev6MW5CF', gid:'0' },
-  conferidos:  { id:'2PACX-1vRBAv7aQdRzJnCUsn-4luPM7D1ytPWCIp4iF9FCHz1vOdb0ewy0vEy1p31umLOqKBPFpcenWPFoT1Cd', gid:'0' },
-  recebimento: { id:'2PACX-1vS6-tZx0ANlJaz891LONBjcL1xNxdDO_s8BSOUp150NcpgnNBe5fpBKP62fIokKPZ1IeDZemMppyL7e', gid:'0' },
+  avanco:      { id:'1caVdFsLJ6fermGeH1Wme7ApS-gKcmKj3f56Gt6tsHFI', gid:'0' }, // Avanço de estoque (equipe)
+  pedidos:     { id:'1oWxXebiet_R5kB8psL3qkeoU18eur5UJd1v4tfCPiFA', gid:'0' }, // Pedidos aprovados
+  separados:   { id:'1qRcXIFczEYXe4UTt6KDgO5Nw5WTt59V9uuDV1DTt-B4', gid:'0' }, // Produtos separados
+  ops:         { id:'1Aum2pKKSZfkISCrTuR6sWpBrezOsp1YSEGZrxVJScTE', gid:'0' }, // Ordens de produção
+  alteracoes:  { id:'1BWWQkj1off7I5Xf18oXliNJYiFd9Fe_kicZb-okvs3s', gid:'0' }, // Alteração de produtos
+  documentos:  { id:'1yNdm3Qfotd7x0OK5HV0Ptb6fZ7V38sTkoEOOgM0swOU', gid:'0' }, // Documentos finalizados
+  conferidos:  { id:'1-tZet39ZmrbIT_-OUMviO6vXiR_mGDoCT_l27-5D1_o', gid:'0' }, // Produtos conferidos
+  recebimento: { id:'1yrHSdT_kKfRrBETqfgotS6db_rJOo2BUCkALhfvAOgs', gid:'0' }, // Registro de recebimento
 };
 
 // 2) COORDENADOR (Mestre) — TROQUE A SENHA
 const COORDENADOR = { id:'MESTRE', nome:'MESTRE COORDENADOR', senha:'mestre@Belt', isMaster:true };
 
 // 3) OPERADORES (o "id" deve ser o PRIMEIRO NOME, igual ao que aparece nas planilhas)
+//    Troque as senhas. As cores só definem o visual do avatar pixelado.
 const OPERADORES = [
   { id:'ARTHUR',   nome:'ARTHUR PEREIRA WEBER',       senha:'@Belt102030', skin:'#fca5a5', cabelo:'#854d0e', roupa:'#15803d' },
   { id:'GABRIEL',  nome:'GABRIEL GONCALVES PERES',    senha:'@Belt102030', skin:'#fca5a5', cabelo:'#475569', roupa:'#b91c1c' },
@@ -437,23 +438,39 @@ const OPERADORES = [
   { id:'RIQUELMI', nome:'RIQUELMI MOREIRA DOS SANTOS',senha:'@Belt102030', skin:'#fed7aa', cabelo:'#78350f', roupa:'#64748b' },
 ];
 
-// 4) TABELA DE XP
+// 4) TABELA DE XP (recompensas e penalidades) — já preenchida com as suas regras
 const XP  = { tetoPedido:1000, separado:10, op:10, ajuste:5, nf:50, ct:20, conferido:5, recebido:20, missaoDiaria:100 };
 const PEN = { atraso:500, falta:5000, rnc:1000, erroDoc:100 };
 
-// 5) META MENSAL de endereçamento
-const META_MENSAL = {};
+// 5) META MENSAL de endereçamento (definida pelo Mestre). Chave = 'AAAA-MM'.
+const META_MENSAL = {
+  // '2026-08': 300,
+};
 
-// 6) AJUSTES MANUAIS
-const AJUSTES_MANUAIS = {};
+// 6) AJUSTES MANUAIS por mês e operador (o que NÃO vem de planilha):
+//    faltas, atrasos, rnc, errosDoc (NF/CT lançada errada), missoesDiarias, bonusExtra (XP avulso).
+//    Só preencha o que houver; o resto conta como zero. Ex.:
+const AJUSTES_MANUAIS = {
+  // '2026-08': {
+  //   ARTHUR:   { missoesDiarias:5, atrasos:1 },
+  //   LUAN:     { faltas:1, rnc:1 },
+  //   GABRIEL:  { errosDoc:2, bonusExtra:150 },
+  // },
+};
 
-// 7) GUARDIÃO DO ESTOQUE
-const GUARDIAO_MANUAL = {};
+// 7) GUARDIÃO DO ESTOQUE (opcional). Normalmente é calculado sozinho (campeão do mês
+//    anterior). Use isto só para forçar manualmente. Chave = mês em que o bônus vale.
+const GUARDIAO_MANUAL = {
+  // '2026-08': 'ARTHUR',
+};
 
-// 8) PROJETOS extras
-const PROJETOS_EXTRA = [];
+// 8) PROJETOS extras exibidos ao coordenador (o de estoque é calculado automaticamente).
+const PROJETOS_EXTRA = [
+  // { nome:'Padronização de descrições (Plune)', progresso:70 },
+  // { nome:'Automação RPA de cadastro', progresso:40 },
+];
 
-// 9) POWER-UPS
+// 9) POWER-UPS (item lendário do dia)
 const POWERUPS = [
   { nome:'Aplicador de Fita Lendário 📦', efeito:'+10% de XP por real do pedido' },
   { nome:'Botina EPI Lendária 🥾',        efeito:'+10% de XP por produto separado' },
@@ -465,7 +482,7 @@ const POWERUPS = [
   { nome:'Rádio Lendário 📻',             efeito:'+10% de XP por material recebido' },
 ];
 
-// 10) POOL DE MISSÕES DIÁRIAS
+// 10) POOL DE MISSÕES DIÁRIAS (uma é sorteada por dia para toda a equipe)
 const MISSOES_POOL = [
   'Zerar a fila de separação do dia',
   'Conferir todo material recebido antes das 17h',
@@ -479,11 +496,12 @@ const MISSOES_POOL = [
    ███  A PARTIR DAQUI É O MOTOR — não precisa mexer  ███
    ========================================================================== */
 
-let DADOS = null;
-let ERROS_FETCH = [];
+let DADOS = null;           // dados já pré-processados
+let ERROS_FETCH = [];       // planilhas que falharam
 let ULTIMA_SYNC = null;
-const cacheMes = {};
+const cacheMes = {};        // memoiza cálculo por mês
 
+// ---------- helpers de leitura ----------
 function normNome(s){ return String(s||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toUpperCase().replace(/\s+/g,' ').trim(); }
 function resolveOp(raw){
   const n = normNome(raw); if(!n) return null;
@@ -521,29 +539,32 @@ function mesAnterior(k){ let [y,m]=k.split('-').map(Number); m--; if(m<1){m=12;y
 const MESES_PT=['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
 function mesLabel(k){ const [y,m]=k.split('-'); return `${MESES_PT[+m-1]} ${y}`; }
 function fmt(n){ return Math.round(n).toLocaleString('pt-BR'); }
+function fmtMoeda(n){ return n.toLocaleString('pt-BR',{style:'currency',currency:'BRL'}); }
 
-// CORREÇÃO CRÍTICA NA LEITURA DAS PLANILHAS (SUPORTE A 2PACX E GID / SHEET)
-async function fetchSheet(cfg){
-  let url;
-  if(cfg.id.startsWith('2PACX-')){
-    const aba = cfg.sheet ? `&sheet=${encodeURIComponent(cfg.sheet)}` : '';
-    url = `https://docs.google.com/spreadsheets/d/e/${cfg.id}/gviz/tq?tqx=out:json${aba}&_=${Date.now()}`;
-  } else {
-    url = `https://docs.google.com/spreadsheets/d/${cfg.id}/gviz/tq?tqx=out:json&gid=${cfg.gid}&_=${Date.now()}`;
-  }
-  
-  const res = await fetch(url, { cache:'no-store' });
-  if(!res.ok) throw new Error(`HTTP ${res.status}`);
-  const txt = await res.text();
-  const ini = txt.indexOf('{'); const fim = txt.lastIndexOf('}');
-  if(ini < 0 || fim < 0) throw new Error('Estrutura de dados inválida');
-  
-  try {
-    const json = JSON.parse(txt.substring(ini, fim + 1));
-    return (json.table && json.table.rows ? json.table.rows : []).map(r => r.c || []);
-  } catch(e) {
-    throw new Error('Falha no Parse JSON');
-  }
+// ---------- busca no Google Sheets (endpoint gviz, público) ----------
+// Leitura via <script> (JSONP) — NÃO passa pela regra de CORS, por isso funciona
+// a partir do GitHub Pages. O endpoint gviz devolve  cb({...})  e nós capturamos.
+function fetchSheet(cfg){
+  return new Promise((resolve, reject)=>{
+    const cb = '__gviz_' + Math.random().toString(36).slice(2) + '_' + Date.now();
+    const url = `https://docs.google.com/spreadsheets/d/${cfg.id}/gviz/tq`
+              + `?gid=${encodeURIComponent(cfg.gid)}&headers=1`
+              + `&tqx=out:json;responseHandler:${cb}&_=${Date.now()}`;
+    const s = document.createElement('script');
+    let feito = false;
+    const limpar = ()=>{ try{ delete window[cb]; }catch(_){ window[cb]=undefined; } if(s.parentNode) s.parentNode.removeChild(s); };
+    const timer = setTimeout(()=>{ if(feito) return; feito=true; limpar(); reject(new Error('timeout')); }, 20000);
+    window[cb] = (json)=>{ if(feito) return; feito=true; clearTimeout(timer); limpar();
+      try {
+        const rows = (json && json.table && json.table.rows) ? json.table.rows : [];
+        resolve(rows.map(r=>r.c||[]));
+      } catch(e){ reject(e); }
+    };
+    s.onerror = ()=>{ if(feito) return; feito=true; clearTimeout(timer); limpar(); reject(new Error('erro ao carregar')); };
+    s.referrerPolicy = 'no-referrer';
+    s.src = url;
+    document.head.appendChild(s);
+  });
 }
 
 async function carregarTudo(){
@@ -572,6 +593,7 @@ function preprocessar(b){
   return D;
 }
 
+// ---------- meses disponíveis ----------
 function mesesDisponiveis(){
   const set = new Set();
   if(DADOS){
@@ -583,6 +605,7 @@ function mesesDisponiveis(){
   return Array.from(set).sort().reverse();
 }
 
+// ---------- núcleo de cálculo ----------
 function novoBreakdown(){ return { valorPedidos:0, qtdPedidos:0, separados:0, ops:0, ajustes:0, nfFatura:0, conhecFrete:0, conferidos:0, recebidos:0 }; }
 
 function computeTotais(mesKey, guardiaoId){
@@ -645,13 +668,13 @@ function nivelInfo(xp){
   let classe,emoji; if(nivel<=10){classe='Bronze';emoji='🥉';}else if(nivel<=25){classe='Prata';emoji='🥈';}else if(nivel<=50){classe='Ouro';emoji='🥇';}else if(nivel<=100){classe='Diamante';emoji='💎';}else{classe='Rubi';emoji='🔴';}
   return {nivel,xpNoNivel,progresso,classe,emoji};
 }
-
 function rankingOrdenado(mesKey){
-  const { totais } = computo(mesKey);
+  const { totais, guardiaoId } = computo(mesKey);
   return OPERADORES.map(o=>({ op:o, R:totais[o.id], ni:nivelInfo(totais[o.id].total) }))
                    .sort((a,b)=> b.R.total - a.R.total);
 }
 
+// ---------- avanço de estoque ----------
 function avancoMes(mesKey){
   const rows = DADOS.avanco.filter(r=>mesDe(r.data)===mesKey).sort((a,b)=>a.data-b.data);
   const somaAddr = rows.reduce((s,r)=>s+r.addr,0);
@@ -659,6 +682,7 @@ function avancoMes(mesKey){
   return { rows, somaAddr, ult };
 }
 
+// ---------- avatares pixel ----------
 function avatarSVG(op, cls){
   if(op.isMaster){
     return `<svg class="${cls}" viewBox="0 0 16 16" style="border-color:#c084fc">
@@ -675,6 +699,7 @@ function avatarSVG(op, cls){
     <rect x="3" y="10" width="10" height="6" fill="${op.roupa}"/></svg>`;
 }
 
+// ---------- gráfico de barras (pixel) ----------
 function chartBarras(itens, cor){
   if(!itens.length) return `<div class="tiny" style="padding:8px 0">Sem dados no período.</div>`;
   const max = Math.max(1, ...itens.map(i=>i.v));
@@ -688,6 +713,11 @@ function chartBarras(itens, cor){
   return `<div class="chart">${cols}</div><div class="chart-x">${xs}</div>`;
 }
 
+/* ==========================================================================
+   RENDERIZAÇÃO
+   ========================================================================== */
+
+// ---------- LOGIN ----------
 let selUser = 0;
 function listaUsuarios(){ return [COORDENADOR, ...OPERADORES]; }
 function renderLogin(){
@@ -704,7 +734,6 @@ function renderLogin(){
 }
 function selChar(i){ selUser=i; document.getElementById('errorMsg').style.display='none';
   document.querySelectorAll('.char-option').forEach((el,k)=> el.classList.toggle('selected', k===i)); }
-
 function handleLogin(){
   const u = listaUsuarios()[selUser];
   const senha = document.getElementById('password').value;
@@ -714,7 +743,6 @@ function handleLogin(){
   entrar(u);
 }
 function fazerLogout(){ localStorage.removeItem('jornada_user'); mostrar('tela-login'); renderLogin(); }
-
 function entrar(u){
   if(u.isMaster){ mostrar('tela-coordenador'); montarSeletor('mesCoord'); renderCoordenador(); }
   else { mostrar('tela-operador'); montarSeletor('mesOp'); renderOperador(); }
@@ -726,15 +754,17 @@ function montarSeletor(selId){
   sel.innerHTML = meses.map(m=>`<option value="${m}">${mesLabel(m)}</option>`).join('');
 }
 
+// ---------- BANNER DE ERRO ----------
 function mostrarErros(bannerId){
   const el = document.getElementById(bannerId);
   if(!ERROS_FETCH.length){ el.style.display='none'; return; }
   el.style.display='block';
   el.innerHTML = `<b>⚠️ Não consegui ler ${ERROS_FETCH.length} pergaminho(s):</b>
     <ul>${ERROS_FETCH.map(k=>`<li>${k}</li>`).join('')}</ul>
-    Verifique se essas planilhas estão publicadas na Web (Arquivo > Compartilhar > Publicar na Web).`;
+    Confira se cada planilha está compartilhada como "Qualquer pessoa com o link → Leitor" e se a página está sendo aberta por https:// (não como arquivo local).`;
 }
 
+// ---------- COORDENADOR ----------
 function renderCoordenador(){
   const mes = document.getElementById('mesCoord').value;
   mostrarErros('banner-erro-coord');
@@ -743,6 +773,7 @@ function renderCoordenador(){
 
   const { totais, guardiaoId } = computo(mes);
 
+  // Guardião banner
   const gDiv = document.getElementById('coord-guardiao');
   if(guardiaoId){
     const gop = OPERADORES.find(o=>o.id===guardiaoId);
@@ -752,6 +783,7 @@ function renderCoordenador(){
       <div class="d">Campeão do mês anterior — recebe +10% de XP em todas as tarefas deste mês.</div></div>`;
   } else { gDiv.innerHTML=''; }
 
+  // Meta
   const av = avancoMes(mes);
   const meta = META_MENSAL[mes];
   const metaDiv = document.getElementById('coord-meta');
@@ -762,9 +794,10 @@ function renderCoordenador(){
       <div class="tiny" style="margin-top:6px">${pc}% da meta do mês.</div>`;
   } else {
     metaDiv.innerHTML = `<div class="meta-line"><span>Endereçados no mês</span><b>${fmt(av.somaAddr)}</b></div>
-      <div class="tiny">Meta do mês ainda não definida.</div>`;
+      <div class="tiny">Meta do mês ainda não definida (preencha <span class="xp-chip">META_MENSAL</span> na configuração).</div>`;
   }
 
+  // Macro (totais da equipe)
   let tPed=0,vPed=0,tSep=0,tOps=0,tAju=0,tNf=0,tCt=0,tConf=0,tReceb=0;
   OPERADORES.forEach(o=>{ const b=totais[o.id].b;
     tPed+=b.qtdPedidos; vPed+=totais[o.id].xpPedidos; tSep+=b.separados; tOps+=b.ops; tAju+=b.ajustes;
@@ -781,6 +814,7 @@ function renderCoordenador(){
     <div class="stat-box"><div class="stat-label">Recebimentos</div><div class="stat-value">${fmt(tReceb)}</div></div>
     <div class="stat-box"><div class="stat-label">Total heróis</div><div class="stat-value">${OPERADORES.length}</div></div>`;
 
+  // Avanço de estoque (snapshot do último registro + gráfico diário)
   const subEl = document.getElementById('coord-avanco-sub');
   const areasEl = document.getElementById('coord-areas');
   if(av.ult){
@@ -801,6 +835,7 @@ function renderCoordenador(){
   const itensAv = av.rows.map(r=>({ l:String(r.data.getDate()), v:r.addr }));
   document.getElementById('coord-chart-avanco').innerHTML = chartBarras(itensAv,'roxo');
 
+  // Projetos
   const projEl = document.getElementById('coord-projetos');
   let projetos = [];
   if(av.ult){
@@ -814,6 +849,7 @@ function renderCoordenador(){
     <div class="bar-bg"><div class="bar-fill roxo" style="width:${Math.min(100,p.progresso)}%"></div></div></div>`).join('')
     : `<div class="tiny">Nenhum projeto cadastrado.</div>`;
 
+  // Hall da Fama
   const rk = rankingOrdenado(mes);
   const tb = document.querySelector('#coord-hall tbody'); tb.innerHTML='';
   rk.forEach((e,i)=>{
@@ -827,6 +863,7 @@ function renderCoordenador(){
     tb.appendChild(tr);
   });
 
+  // Extrato por operador (colapsável)
   const opEl = document.getElementById('coord-operadores'); opEl.innerHTML='';
   rk.forEach(e=>{
     const d=document.createElement('details'); d.className='op-card';
@@ -838,6 +875,7 @@ function renderCoordenador(){
   });
 }
 
+// tabela de extrato reutilizável
 function tabelaExtrato(R){
   const b=R.b;
   const linha=(nome,q,xp,cls='')=>`<tr class="${cls}"><td>${nome}</td><td class="q">${q}</td><td class="x">${xp>=0?'+':''}${fmt(xp)}</td></tr>`;
@@ -863,6 +901,7 @@ function tabelaExtrato(R){
   return html;
 }
 
+// ---------- OPERADOR ----------
 function renderOperador(){
   const uid = localStorage.getItem('jornada_user');
   const op = OPERADORES.find(o=>o.id===uid);
@@ -879,6 +918,7 @@ function renderOperador(){
   document.getElementById('op-progress').style.width = ni.progresso+'%';
   document.getElementById('op-xp').textContent = `${fmt(ni.xpNoNivel)} / 5.000 XP p/ próximo nível`;
 
+  // Guardião tag + posição no ranking
   const rk = rankingOrdenado(mes);
   const pos = rk.findIndex(e=>e.op.id===op.id)+1;
   const tagEl = document.getElementById('op-guardiao-tag');
@@ -890,18 +930,23 @@ function renderOperador(){
     <div class="stat-box"><div class="stat-label">XP total no mês</div><div class="stat-value">${fmt(R.total)}</div></div>
     <div class="stat-box"><div class="stat-label">Posição no Hall</div><div class="stat-value">${pos}º</div></div>`;
 
+  // Extrato
   document.getElementById('op-extrato-wrap').innerHTML = tabelaExtrato(R);
 
+  // Power-up do dia (estável por dia + operador)
   const pu = POWERUPS[ hashDia(hojeStr()+'|'+op.id) % POWERUPS.length ];
   document.getElementById('op-powerup-nome').textContent = pu.nome;
   document.getElementById('op-powerup-efeito').textContent = pu.efeito;
 
+  // Missão diária (mesma para todos no dia)
   const mis = MISSOES_POOL[ hashDia(hojeStr()) % MISSOES_POOL.length ];
   document.getElementById('op-missao-txt').textContent = mis;
   const chk = document.getElementById('op-missao-check');
-  chk.checked = localStorage.getItem('missao_'+op.id+'_'+hojeStr())==='1';
+  const marcada = localStorage.getItem('missao_'+op.id+'_'+hojeStr())==='1';
+  chk.checked = marcada;
 
-  const meses = mesesDisponiveis().slice().reverse();
+  // Histórico de XP por mês
+  const meses = mesesDisponiveis().slice().reverse(); // crescente p/ o gráfico
   const itens = meses.map(m=>{
     const t = computo(m).totais[op.id];
     return { l: MESES_PT[+m.split('-')[1]-1].slice(0,3), v: Math.max(0, t? t.total : 0) };
@@ -914,9 +959,11 @@ function marcarMissao(chk){
   localStorage.setItem('missao_'+uid+'_'+hojeStr(), chk.checked?'1':'0');
 }
 
+// ---------- util diário ----------
 function hashDia(seed){ let h=0; const s=String(seed); for(let i=0;i<s.length;i++){ h=(h*31 + s.charCodeAt(i))>>>0; } return h; }
 function hojeStr(){ const d=new Date(); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`; }
 
+// ---------- SYNC ----------
 async function sincronizar(){
   const msg=document.getElementById('loading-msg');
   document.getElementById('loading').style.display='flex';
@@ -928,6 +975,7 @@ async function sincronizar(){
   else if(ativo && ativo.id==='tela-operador'){ montarSeletor('mesOp'); renderOperador(); }
 }
 
+// ---------- INICIALIZAÇÃO ----------
 window.addEventListener('load', async ()=>{
   const msgs=['Invocando os pergaminhos da guilda...','Consultando os anais do estoque...','Somando o XP dos heróis...','Selando as correias mágicas...'];
   let i=0; const el=document.getElementById('loading-msg');
