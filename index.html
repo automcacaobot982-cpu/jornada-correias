@@ -24,6 +24,8 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="Jornada das Correias">
+<link rel="manifest" href="./manifest.json">
+<link rel="apple-touch-icon" href="./icon-192.png">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Crect width='16' height='16' fill='%23120c1f'/%3E%3Crect x='3' y='2' width='10' height='2' fill='%23ffd700'/%3E%3Crect x='2' y='4' width='12' height='7' fill='%238b6508'/%3E%3Crect x='6' y='6' width='4' height='3' fill='%23ffd700'/%3E%3Crect x='5' y='11' width='6' height='3' fill='%23b8860b'/%3E%3C/svg%3E">
 <title>Jornada das Correias — Portal e Painel</title>
 <style>
@@ -361,6 +363,7 @@
                 <select class="month-select" id="mesOp" onchange="renderOperador()"></select>
                 <button class="btn-sync" onclick="sincronizar()">↻ SYNC</button>
             </div>
+            <div class="tiny" id="sync-info-op" style="margin-top:8px;"></div>
         </div>
 
         <div class="panel">
@@ -439,7 +442,7 @@ const OPERADORES = [
 ];
 
 // 4) TABELA DE XP (recompensas e penalidades) — já preenchida com as suas regras
-const XP  = { tetoPedido:1000, separado:10, op:10, ajuste:10, nf:10, ct:10, conferido:10, recebido:10, missaoDiaria:100 };
+const XP  = { tetoPedido:1000, separado:10, op:10, ajuste:5, nf:50, ct:20, conferido:5, recebido:20, missaoDiaria:100 };
 const PEN = { atraso:500, falta:5000, rnc:1000, erroDoc:100 };
 
 // 5) META MENSAL de endereçamento (definida pelo Mestre). Chave = 'AAAA-MM'.
@@ -499,6 +502,7 @@ const MISSOES_POOL = [
 let DADOS = null;           // dados já pré-processados
 let ERROS_FETCH = [];       // planilhas que falharam
 let ULTIMA_SYNC = null;
+let MODO_OFFLINE = false;    // true quando usando a última cópia salva (sem rede)
 const cacheMes = {};        // memoiza cálculo por mês
 
 // ---------- helpers de leitura ----------
@@ -573,11 +577,40 @@ async function carregarTudo(){
   const brutos = {};
   await Promise.all(chaves.map(async k=>{
     try { brutos[k] = await fetchSheet(SHEETS[k]); }
-    catch(e){ brutos[k] = []; ERROS_FETCH.push(k); }
+    catch(e){ ERROS_FETCH.push(k); }
   }));
-  DADOS = preprocessar(brutos);
-  ULTIMA_SYNC = new Date();
+  chaves.forEach(k=>{ if(!(k in brutos)) brutos[k] = []; });
+
+  const novo = preprocessar(brutos);
+  const snap = carregarSnapshot();
+
+  if(ERROS_FETCH.length === chaves.length && snap){
+    // Sem rede: usa a última cópia salva por completo
+    DADOS = snap.dados; ULTIMA_SYNC = new Date(snap.ts); MODO_OFFLINE = true;
+  } else {
+    // Para abas que falharam pontualmente, aproveita a cópia anterior (se houver)
+    if(snap){ ERROS_FETCH.forEach(k=>{ if(snap.dados[k] && snap.dados[k].length) novo[k] = snap.dados[k]; }); }
+    DADOS = novo; ULTIMA_SYNC = new Date(); MODO_OFFLINE = false;
+    salvarSnapshot();
+  }
   for(const k in cacheMes) delete cacheMes[k];
+}
+
+// Guarda a última leitura no aparelho, para abrir offline mostrando o último SYNC.
+function salvarSnapshot(){
+  try {
+    const plano = {};
+    for(const k in DADOS){ plano[k] = DADOS[k].map(r=>({ ...r, data: r.data ? r.data.getTime() : null })); }
+    localStorage.setItem('jornada_snapshot', JSON.stringify({ ts: ULTIMA_SYNC.getTime(), dados: plano }));
+  } catch(e){ /* cota cheia: ignora, segue sem cópia offline */ }
+}
+function carregarSnapshot(){
+  try {
+    const s = localStorage.getItem('jornada_snapshot'); if(!s) return null;
+    const o = JSON.parse(s); const d = {};
+    for(const k in o.dados){ d[k] = o.dados[k].map(r=>({ ...r, data: r.data!=null ? new Date(r.data) : null })); }
+    return { ts:o.ts, dados:d };
+  } catch(e){ return null; }
 }
 
 function preprocessar(b){
@@ -764,12 +797,17 @@ function mostrarErros(bannerId){
     Confira se cada planilha está compartilhada como "Qualquer pessoa com o link → Leitor" e se a página está sendo aberta por https:// (não como arquivo local).`;
 }
 
+function textoSync(){
+  if(!ULTIMA_SYNC) return '';
+  const q = ULTIMA_SYNC.toLocaleString('pt-BR');
+  return MODO_OFFLINE ? `📴 OFFLINE — mostrando dados de ${q}` : `Última sincronização: ${q}`;
+}
+
 // ---------- COORDENADOR ----------
 function renderCoordenador(){
   const mes = document.getElementById('mesCoord').value;
   mostrarErros('banner-erro-coord');
-  document.getElementById('sync-info-coord').textContent =
-    ULTIMA_SYNC ? `Última sincronização: ${ULTIMA_SYNC.toLocaleString('pt-BR')}` : '';
+  document.getElementById('sync-info-coord').textContent = textoSync();
 
   const { totais, guardiaoId } = computo(mes);
 
@@ -908,6 +946,7 @@ function renderOperador(){
   if(!op){ fazerLogout(); return; }
   const mes = document.getElementById('mesOp').value;
   mostrarErros('banner-erro-op');
+  document.getElementById('sync-info-op').textContent = textoSync();
 
   const { totais } = computo(mes);
   const R = totais[op.id]; const ni = nivelInfo(R.total);
@@ -993,6 +1032,13 @@ window.addEventListener('load', async ()=>{
 
   mostrarErros('banner-erro-login');
 });
+</script>
+
+<script>
+  // Registro do PWA (service worker). Só funciona por https:// (GitHub Pages) — em file:// é ignorado.
+  if('serviceWorker' in navigator){
+    window.addEventListener('load', ()=>{ navigator.serviceWorker.register('./sw.js').catch(()=>{}); });
+  }
 </script>
 </body>
 </html>
