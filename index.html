@@ -265,6 +265,7 @@
     .ind-table td.n { text-align:center; color:var(--roxo2); font-size:8pt; }
     .ind-table td.x { text-align:center; font-family:'Press Start 2P',cursive; font-size:4.5pt; color:var(--ouro); }
     .ind-table td.r { text-align:right; font-family:'Press Start 2P',cursive; font-size:4.5pt; color:#6ee7b7; white-space:nowrap; }
+    .ind-table tr.demais-row td { background:#3f1d1d; color:#fca5a5; font-style:italic; }
     .pts-xp { font-size:6.5pt; color:var(--creme2); opacity:.65; }
 </style>
 </head>
@@ -375,7 +376,7 @@
 
         <div class="panel">
             <div class="panel-title"><span>📊 Ranking por Indicador</span></div>
-            <div class="panel-sub">Toque em um indicador. Bônus = fatia do prêmio vinda daquele indicador.</div>
+            <div class="panel-sub">Toque em um indicador. Bônus = fatia do prêmio; DEMAIS (fora do setor) não recebe.</div>
             <div id="coord-indicadores"></div>
         </div>
     </div>
@@ -482,10 +483,19 @@ const OPERADORES = [
 ];
 
 // 3b) O MESTRE também realiza tarefas e entra no ranking e no rateio do prêmio.
-//     Nas planilhas ele aparece como "BOT" (ex.: coluna C de "Alteração de produtos").
-const MESTRE = { id:'BOT', nome:'MESTRE (BOT)', isMaster:true };
-// Todos que pontuam no mês: os 4 operadores + o mestre.
+//     Nos relatórios ele aparece com nomes diferentes — TODOS os aliases abaixo somam
+//     para o mestre (a coluna C de "Alteração de produtos", por ex., usa "BOT").
+const MESTRE = { id:'BOT', nome:'MESTRE (BOT)', isMaster:true,
+                 aliases:['BOT','AUTOMACAO BOT','MICKAEL KALIL WAGNER DE OLIVEIRA'] };
+// Todos que pontuam no mês (competem por prêmio e Hall): os 4 operadores + o mestre.
 const PARTICIPANTES = [...OPERADORES, MESTRE];
+
+// DEMAIS = qualquer pessoa FORA do setor (não é operador nem o mestre). NÃO compete por
+// prêmio nem aparece no Hall; serve para o Mestre enxergar a proporção de atividades feitas
+// por gente de fora do estoque (controle e questionamento de interferência).
+const DEMAIS = { id:'DEMAIS', nome:'DEMAIS (fora do setor)', isDemais:true };
+// Entidades cujas atividades são contabilizadas: participantes + DEMAIS.
+const RASTREADOS = [...PARTICIPANTES, DEMAIS];
 
 // 4) TABELA DE XP (recompensas e penalidades). Produto ajustado vale 1 XP; as demais tarefas, 10 XP.
 const XP  = { pedido:10, separado:10, op:10, ajuste:1, nf:10, ct:10, conferido:10, recebido:10, missaoDiaria:100 };
@@ -559,10 +569,16 @@ function normNome(s){ return String(s||'').normalize('NFD').replace(/[\u0300-\u0
 function resolveOp(raw){
   const n = normNome(raw); if(!n) return null;
   const first = n.split(' ')[0];
+  // 1) aliases explícitos (o mestre aparece como BOT, AUTOMACAO BOT, nome completo, etc.)
+  for(const o of PARTICIPANTES){
+    if(o.aliases) for(const a of o.aliases){ const an=normNome(a); if(an && (n===an || n.startsWith(an+' '))) return o.id; }
+  }
+  // 2) id (primeiro nome) exato, ou início do nome cadastrado
   const ids = PARTICIPANTES.map(o=>o.id);
   if(ids.includes(first)) return first;
   for(const o of PARTICIPANTES){ if(n.startsWith(normNome(o.nome).split(' ')[0])) return o.id; }
-  return null;
+  // 3) qualquer outra pessoa (fora do setor de estoque) entra como DEMAIS
+  return 'DEMAIS';
 }
 function celStr(c){ return (!c||c.v==null)?'':String(c.v).trim(); }
 function parseNum(c){
@@ -678,7 +694,7 @@ function preprocessar(b){
   (b.pedidos||[]).forEach(c=>{ const data=parseData(c[2]); if(!data) return; D.pedidos.push({ data, op:resolveOp(celStr(c[1])), valor:parseNum(c[4]) }); });
   (b.separados||[]).forEach(c=>{ const data=parseData(c[2]); if(!data) return; D.separados.push({ data, op:resolveOp(celStr(c[1])), area:celStr(c[4]).toUpperCase() }); });
   (b.ops||[]).forEach(c=>{ const data=parseData(c[2])||parseData(c[1]); if(!data) return; D.ops.push({ data, op:resolveOp(celStr(c[0])), area:celStr(c[7]).toUpperCase() }); });
-  (b.alteracoes||[]).forEach(c=>{ const data=parseData(c[0]); if(!data) return; D.alteracoes.push({ data, BOT:parseNum(c[2]), ARTHUR:parseNum(c[3]), GABRIEL:parseNum(c[4]), LUAN:parseNum(c[5]), RIQUELMI:parseNum(c[6]) }); });
+  (b.alteracoes||[]).forEach(c=>{ const data=parseData(c[0]); if(!data) return; D.alteracoes.push({ data, DEMAIS:parseNum(c[1]), BOT:parseNum(c[2]), ARTHUR:parseNum(c[3]), GABRIEL:parseNum(c[4]), LUAN:parseNum(c[5]), RIQUELMI:parseNum(c[6]) }); });
   (b.documentos||[]).forEach(c=>{ const data=parseData(c[4])||parseData(c[3]); if(!data) return; D.documentos.push({ data, tipo:celStr(c[2]).toUpperCase(), op:resolveOp(celStr(c[6])), valor:parseNum(c[5]) }); });
   (b.conferidos||[]).forEach(c=>{ const data=parseData(c[3]); if(!data) return; D.conferidos.push({ data, op:resolveOp(celStr(c[4])) }); });
   (b.recebimento||[]).forEach(c=>{ const data=parseData(c[1]); if(!data) return; D.recebimento.push({ data, op:resolveOp(celStr(c[2])), valor:parseNum(c[7]) }); });
@@ -702,17 +718,17 @@ function mesesDisponiveis(){
 function novoBreakdown(){ return { valorPedidos:0, qtdPedidos:0, separados:0, ops:0, ajustes:0, nfFatura:0, conhecFrete:0, conferidos:0, recebidos:0 }; }
 
 function computeTotais(mesKey, guardiaoId){
-  const res = {}; PARTICIPANTES.forEach(o=> res[o.id]={ b:novoBreakdown() });
+  const res = {}; RASTREADOS.forEach(o=> res[o.id]={ b:novoBreakdown() });
   const B = id => res[id]?res[id].b:null;
   DADOS.pedidos.forEach(r=>{ if(mesDe(r.data)!==mesKey) return; const b=B(r.op); if(!b) return; b.qtdPedidos++; b.valorPedidos+=r.valor; });
   DADOS.separados.forEach(r=>{ if(mesDe(r.data)!==mesKey) return; const b=B(r.op); if(!b) return; b.separados++; });
   DADOS.ops.forEach(r=>{ if(mesDe(r.data)!==mesKey) return; const b=B(r.op); if(!b) return; b.ops++; });
-  DADOS.alteracoes.forEach(r=>{ if(mesDe(r.data)!==mesKey) return; ['ARTHUR','GABRIEL','LUAN','RIQUELMI','BOT'].forEach(id=>{ if(res[id]) res[id].b.ajustes += (r[id]||0); }); });
+  DADOS.alteracoes.forEach(r=>{ if(mesDe(r.data)!==mesKey) return; ['ARTHUR','GABRIEL','LUAN','RIQUELMI','BOT','DEMAIS'].forEach(id=>{ if(res[id]) res[id].b.ajustes += (r[id]||0); }); });
   DADOS.documentos.forEach(r=>{ if(mesDe(r.data)!==mesKey) return; const b=B(r.op); if(!b) return; if(r.tipo.includes('FATURA')||r.tipo.includes('NF')) b.nfFatura++; else if(r.tipo.includes('FRETE')||r.tipo.includes('CONHEC')) b.conhecFrete++; });
   DADOS.conferidos.forEach(r=>{ if(mesDe(r.data)!==mesKey) return; const b=B(r.op); if(!b) return; b.conferidos++; });
   DADOS.recebimento.forEach(r=>{ if(mesDe(r.data)!==mesKey) return; const b=B(r.op); if(!b) return; b.recebidos++; });
 
-  PARTICIPANTES.forEach(o=>{
+  RASTREADOS.forEach(o=>{
     const R=res[o.id], b=R.b;
     R.xpPedidos   = b.qtdPedidos * XP.pedido;
     R.xpSeparados = b.separados*XP.separado;
@@ -1040,13 +1056,15 @@ function renderIndicadores(mesKey){
   const { totais } = computo(mesKey);
   const P = calcularPremios(mesKey);
   el.innerHTML = INDICADORES.map(ind=>{
-    const rows = PARTICIPANTES.map(o=>{
+    const rows = RASTREADOS.map(o=>{
       const R=totais[o.id];
-      return { o, qtd:ind.q(R), xp:ind.xp(R), rs:premioDoIndicador(R, P.premio[o.id], ind.xp(R)) };
+      // DEMAIS (gente de fora) não recebe prêmio: mostra a atividade, mas R$ = "—".
+      const rs = o.isDemais ? null : premioDoIndicador(R, P.premio[o.id]||0, ind.xp(R));
+      return { o, qtd:ind.q(R), xp:ind.xp(R), rs };
     }).sort((a,b)=> b.qtd - a.qtd);
     const totQ = rows.reduce((s,r)=>s+r.qtd,0);
-    const body = rows.map(r=>`<tr><td>${r.o.nome.split(' ')[0]}</td>
-        <td class="n">${fmt(r.qtd)}</td><td class="x">${fmt(r.xp)}</td><td class="r">${fmtMoeda(r.rs)}</td></tr>`).join('');
+    const body = rows.map(r=>`<tr class="${r.o.isDemais?'demais-row':''}"><td>${r.o.nome.split(' ')[0]}</td>
+        <td class="n">${fmt(r.qtd)}</td><td class="x">${fmt(r.xp)}</td><td class="r">${r.rs==null?'—':fmtMoeda(r.rs)}</td></tr>`).join('');
     return `<details class="op-card"><summary>
         <span class="op-nm">${ind.nome}</span>
         <span class="op-pt">${fmt(totQ)}</span><span class="chev">▶</span></summary>
