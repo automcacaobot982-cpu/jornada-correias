@@ -294,4 +294,940 @@
             <div class="panel-title"><span>👤 Selecione seu Herói</span></div>
             <div class="char-select-container" id="charList"></div>
             <div class="input-group">
-                <label 
+                <label class="input-label">🗝️ SENHA DE ACESSO:</label>
+                <input type="password" id="password" class="pixel-input" placeholder="••••••••" autocomplete="off"
+                       onkeydown="if(event.key==='Enter') handleLogin()">
+            </div>
+            <div class="error-msg" id="errorMsg">SENHA INCORRETA! TENTE NOVAMENTE.</div>
+            <button class="btn-action" onclick="handleLogin()">🚪 Cruzar o Portal</button>
+        </div>
+
+        <div class="footer-note">"Somente os dignos de selar a correia cruzarão este portal..."</div>
+    </div>
+
+    <!-- ========================================================= -->
+    <!-- TELA 2: PAINEL DO COORDENADOR (MACRO)                      -->
+    <!-- ========================================================= -->
+    <div id="tela-coordenador" class="view-section">
+        <div class="header">
+            <button class="btn-logout" onclick="fazerLogout()">SAIR ❌</button>
+            <h1>👁️ O Grande Salão</h1>
+            <div class="subtitle">[ VISÃO DO MESTRE COORDENADOR ]</div>
+        </div>
+
+        <div id="banner-erro-coord" class="banner-erro"></div>
+
+        <div class="panel">
+            <div class="panel-title"><span>🗓️ Ciclo de Apuração</span></div>
+            <div class="toolbar">
+                <select class="month-select" id="mesCoord" onchange="renderCoordenador()"></select>
+                <button class="btn-sync" onclick="sincronizar()">↻ SYNC</button>
+            </div>
+            <div class="tiny" id="sync-info-coord" style="margin-top:8px;"></div>
+        </div>
+
+        <div id="coord-guardiao"></div>
+
+        <div class="panel">
+            <div class="panel-title"><span>🎯 Missão Principal (Equipe)</span></div>
+            <div class="panel-sub">Endereçar 100% dos produtos do estoque. Meta mensal definida pelo Mestre.</div>
+            <div class="meta-wrap" id="coord-meta"></div>
+        </div>
+
+        <div class="panel">
+            <div class="panel-title"><span>💰 Bonificação / Prêmio</span></div>
+            <div class="panel-sub">R$ 500 × % da meta, rateado por XP entre operadores e mestre.</div>
+            <div id="coord-premios"></div>
+        </div>
+
+        <div class="panel">
+            <div class="panel-title"><span>📊 Visão Macro dos Indicadores</span></div>
+            <div class="stat-grid" id="coord-macro"></div>
+        </div>
+
+        <div class="panel">
+            <div class="panel-title"><span>📦 Avanço de Estoque</span></div>
+            <div class="panel-sub" id="coord-avanco-sub"></div>
+            <div class="area-grid" id="coord-areas"></div>
+            <div class="hr"></div>
+            <div class="tiny" style="margin-bottom:4px;">Produtos endereçados por dia (mês):</div>
+            <div id="coord-chart-avanco"></div>
+        </div>
+
+        <div class="panel">
+            <div class="panel-title"><span>🏗️ Desenvolvimento dos Projetos</span></div>
+            <div id="coord-projetos"></div>
+        </div>
+
+        <div class="panel">
+            <div class="panel-title"><span>🏆 Hall da Fama</span></div>
+            <table class="leaderboard" id="coord-hall">
+                <thead><tr><th>HERÓI</th><th>CLASSE</th><th>NÍVEL</th><th>PRÊMIO</th></tr></thead>
+                <tbody></tbody>
+            </table>
+        </div>
+
+        <div class="panel">
+            <div class="panel-title"><span>🧾 Extrato Detalhado por Operador</span></div>
+            <div class="panel-sub">Toque em um herói para ver o somatório de pontos.</div>
+            <div id="coord-operadores"></div>
+        </div>
+
+        <div class="panel">
+            <div class="panel-title"><span>📊 Ranking por Indicador</span></div>
+            <div class="panel-sub">Toque em um indicador. Bônus = fatia do prêmio vinda daquele indicador.</div>
+            <div id="coord-indicadores"></div>
+        </div>
+    </div>
+
+    <!-- ========================================================= -->
+    <!-- TELA 3: PAINEL DO OPERADOR (INDIVIDUAL)                    -->
+    <!-- ========================================================= -->
+    <div id="tela-operador" class="view-section">
+        <div class="header">
+            <button class="btn-logout" onclick="fazerLogout()">SAIR ❌</button>
+            <h1>🛡️ Salão do Herói</h1>
+            <div class="subtitle">[ SEU DESEMPENHO NA JORNADA ]</div>
+        </div>
+
+        <div id="banner-erro-op" class="banner-erro"></div>
+
+        <div class="panel">
+            <div class="panel-title"><span>🗓️ Ciclo de Apuração</span></div>
+            <div class="toolbar">
+                <select class="month-select" id="mesOp" onchange="renderOperador()"></select>
+                <button class="btn-sync" onclick="sincronizar()">↻ SYNC</button>
+            </div>
+            <div class="tiny" id="sync-info-op" style="margin-top:8px;"></div>
+        </div>
+
+        <div class="panel">
+            <div class="hero-profile">
+                <div id="op-avatar"></div>
+                <div class="hero-info">
+                    <div class="hero-name" id="op-nome">HERÓI</div>
+                    <div class="hero-class" id="op-classe"></div>
+                    <div class="bar-bg"><div class="bar-fill" id="op-progress"></div></div>
+                    <div class="hero-xp" id="op-xp"></div>
+                </div>
+            </div>
+            <div id="op-guardiao-tag"></div>
+            <div class="stat-grid" id="op-resumo" style="margin-top:4px;"></div>
+        </div>
+
+        <div class="panel">
+            <div class="panel-title"><span>🏗️ Informações do Projeto</span></div>
+            <div id="op-projeto"></div>
+        </div>
+
+        <div class="panel">
+            <div class="panel-title"><span>🎁 Loot do Dia (Check-in)</span></div>
+            <div class="powerup-box">
+                <div class="powerup-title">POWER-UP ENCONTRADO!</div>
+                <div class="powerup-name" id="op-powerup-nome">???</div>
+                <div class="powerup-eff" id="op-powerup-efeito"></div>
+                <div class="powerup-cond">Liberado ao registrar check-in no horário certo (seg a sex, sem atraso). Válido até 23:59 de hoje.</div>
+            </div>
+        </div>
+
+        <div class="panel">
+            <div class="panel-title"><span>📜 Missão Diária</span></div>
+            <div class="mission-item">
+                <span id="op-missao-txt">—</span>
+                <input type="checkbox" id="op-missao-check" onclick="marcarMissao(this)">
+            </div>
+            <div class="tiny" style="margin-top:8px;">Vale <b style="color:var(--ouro)">+100 XP</b>. A marcação é um lembrete pessoal; o XP oficial é lançado pelo coordenador.</div>
+        </div>
+
+        <div class="panel">
+            <div class="panel-title"><span>🧾 Extrato de Pontos (XP)</span></div>
+            <div id="op-extrato-wrap"></div>
+        </div>
+
+        <div class="panel">
+            <div class="panel-title"><span>📈 Seu Histórico de XP</span></div>
+            <div id="op-historico"></div>
+        </div>
+    </div>
+
+</div>
+
+<script>
+/* ==========================================================================
+   ███  CONFIGURAÇÃO  —  É AQUI QUE VOCÊ EDITA  ███
+   ========================================================================== */
+
+// 1) PLANILHAS (id = trecho entre /d/ e /edit na URL ; gid = número da aba)
+const SHEETS = {
+  avanco:      { id:'1caVdFsLJ6fermGeH1Wme7ApS-gKcmKj3f56Gt6tsHFI', gid:'0' }, // Avanço de estoque (equipe)
+  pedidos:     { id:'1oWxXebiet_R5kB8psL3qkeoU18eur5UJd1v4tfCPiFA', gid:'0' }, // Pedidos aprovados
+  separados:   { id:'1qRcXIFczEYXe4UTt6KDgO5Nw5WTt59V9uuDV1DTt-B4', gid:'0' }, // Produtos separados
+  ops:         { id:'1Aum2pKKSZfkISCrTuR6sWpBrezOsp1YSEGZrxVJScTE', gid:'0' }, // Ordens de produção
+  alteracoes:  { id:'1BWWQkj1off7I5Xf18oXliNJYiFd9Fe_kicZb-okvs3s', gid:'0' }, // Alteração de produtos
+  documentos:  { id:'1yNdm3Qfotd7x0OK5HV0Ptb6fZ7V38sTkoEOOgM0swOU', gid:'0' }, // Documentos finalizados
+  conferidos:  { id:'1-tZet39ZmrbIT_-OUMviO6vXiR_mGDoCT_l27-5D1_o', gid:'0' }, // Produtos conferidos
+  recebimento: { id:'1yrHSdT_kKfRrBETqfgotS6db_rJOo2BUCkALhfvAOgs', gid:'0' }, // Registro de recebimento
+};
+
+// 2) COORDENADOR (Mestre) — TROQUE A SENHA
+const COORDENADOR = { id:'MESTRE', nome:'MESTRE COORDENADOR', senha:'mestre@Belt', isMaster:true };
+
+// 3) OPERADORES (o "id" deve ser o PRIMEIRO NOME, igual ao que aparece nas planilhas)
+//    Troque as senhas. As cores só definem o visual do avatar pixelado.
+const OPERADORES = [
+  { id:'ARTHUR',   nome:'ARTHUR PEREIRA WEBER',       senha:'@Belt102030', skin:'#fca5a5', cabelo:'#854d0e', roupa:'#15803d' },
+  { id:'GABRIEL',  nome:'GABRIEL GONCALVES PERES',    senha:'@Belt102030', skin:'#fca5a5', cabelo:'#475569', roupa:'#b91c1c' },
+  { id:'LUAN',     nome:'LUAN DE FRAGA OLIVEIRA',     senha:'@Belt102030', skin:'#fbcfe8', cabelo:'#fef08a', roupa:'#047857' },
+  { id:'RIQUELMI', nome:'RIQUELMI MOREIRA DOS SANTOS',senha:'@Belt102030', skin:'#fed7aa', cabelo:'#78350f', roupa:'#64748b' },
+];
+
+// 3b) O MESTRE também realiza tarefas e entra no ranking e no rateio do prêmio.
+//     Nas planilhas ele aparece como "BOT" (ex.: coluna C de "Alteração de produtos").
+const MESTRE = { id:'BOT', nome:'MESTRE (BOT)', isMaster:true };
+// Todos que pontuam no mês: os 4 operadores + o mestre.
+const PARTICIPANTES = [...OPERADORES, MESTRE];
+
+// 4) TABELA DE XP (recompensas e penalidades). Produto ajustado vale 1 XP; as demais tarefas, 10 XP.
+const XP  = { pedido:10, separado:10, op:10, ajuste:1, nf:10, ct:10, conferido:10, recebido:10, missaoDiaria:100 };
+const PEN = { atraso:500, falta:5000, rnc:1000, erroDoc:100 };
+
+// 4b) XP necessário para subir 1 nível (a cada 500 XP acumulados, sobe 1 nível).
+const XP_POR_NIVEL = 500;
+
+// 5) META MENSAL de endereçamento (definida pelo Mestre). Chave = 'AAAA-MM'.
+const META_MENSAL = {
+  // '2026-08': 300,
+};
+
+// 6) AJUSTES MANUAIS por mês e operador (o que NÃO vem de planilha):
+//    faltas, atrasos, rnc, errosDoc (NF/CT lançada errada), missoesDiarias, bonusExtra (XP avulso).
+//    Só preencha o que houver; o resto conta como zero. Ex.:
+const AJUSTES_MANUAIS = {
+  // '2026-08': {
+  //   ARTHUR:   { missoesDiarias:5, atrasos:1 },
+  //   LUAN:     { faltas:1, rnc:1 },
+  //   GABRIEL:  { errosDoc:2, bonusExtra:150 },
+  // },
+};
+
+// 7) GUARDIÃO DO ESTOQUE (opcional). Normalmente é calculado sozinho (campeão do mês
+//    anterior). Use isto só para forçar manualmente. Chave = mês em que o bônus vale.
+const GUARDIAO_MANUAL = {
+  // '2026-08': 'ARTHUR',
+};
+
+// 8) PROJETOS extras exibidos ao coordenador (o de estoque é calculado automaticamente).
+const PROJETOS_EXTRA = [
+  // { nome:'Padronização de descrições (Plune)', progresso:70 },
+  // { nome:'Automação RPA de cadastro', progresso:40 },
+];
+
+// 9) POWER-UPS (item lendário do dia)
+const POWERUPS = [
+  { nome:'Aplicador de Fita Lendário 📦', efeito:'+10% de XP por real do pedido' },
+  { nome:'Botina EPI Lendária 🥾',        efeito:'+10% de XP por produto separado' },
+  { nome:'Paquímetro Lendário 📐',        efeito:'+10% de XP por OP finalizada' },
+  { nome:'Prancheta Lendária 📋',         efeito:'+10% de XP por produto ajustado' },
+  { nome:'Caneta Lendária 🖋️',           efeito:'+10% de XP por nota fiscal' },
+  { nome:'Trena Lendária 📏',             efeito:'+10% de XP por conhecimento de frete' },
+  { nome:'Estilete Lendário 🗡️',         efeito:'+10% de XP por produto conferido' },
+  { nome:'Rádio Lendário 📻',             efeito:'+10% de XP por material recebido' },
+];
+
+// 10) POOL DE MISSÕES DIÁRIAS (uma é sorteada por dia para toda a equipe)
+const MISSOES_POOL = [
+  'Zerar a fila de separação do dia',
+  'Conferir todo material recebido antes das 17h',
+  'Endereçar ao menos 15 produtos N/D',
+  'Finalizar todas as OPs em aberto do dia',
+  'Manter a área de expedição limpa e organizada',
+  'Registrar recebimentos assim que a carga chegar',
+];
+
+/* ==========================================================================
+   ███  A PARTIR DAQUI É O MOTOR — não precisa mexer  ███
+   ========================================================================== */
+
+let DADOS = null;           // dados já pré-processados
+let ERROS_FETCH = [];       // planilhas que falharam
+let ULTIMA_SYNC = null;
+let MODO_OFFLINE = false;    // true quando usando a última cópia salva (sem rede)
+const cacheMes = {};        // memoiza cálculo por mês
+
+// ---------- helpers de leitura ----------
+function normNome(s){ return String(s||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toUpperCase().replace(/\s+/g,' ').trim(); }
+function resolveOp(raw){
+  const n = normNome(raw); if(!n) return null;
+  const first = n.split(' ')[0];
+  const ids = PARTICIPANTES.map(o=>o.id);
+  if(ids.includes(first)) return first;
+  for(const o of PARTICIPANTES){ if(n.startsWith(normNome(o.nome).split(' ')[0])) return o.id; }
+  return null;
+}
+function celStr(c){ return (!c||c.v==null)?'':String(c.v).trim(); }
+function parseNum(c){
+  if(!c||c.v==null) return 0;
+  if(typeof c.v==='number') return c.v;
+  let s=String(c.v).trim().replace(/[R$\s]/g,'');
+  if(s.indexOf(',')>-1 && s.indexOf('.')>-1) s=s.replace(/\./g,'').replace(',','.');
+  else if(s.indexOf(',')>-1) s=s.replace(',','.');
+  const n=parseFloat(s.replace(/[^0-9.\-]/g,''));
+  return isNaN(n)?0:n;
+}
+function parseData(c){
+  if(!c) return null;
+  const tryS=(s)=>{ if(s==null) return null; s=String(s).trim();
+    let m=s.match(/Date\((\d+),(\d+),(\d+)/); if(m) return new Date(+m[1],+m[2],+m[3]);
+    m=s.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{2,4})/); if(m){ let y=+m[3]; if(y<100)y+=2000; return new Date(y,+m[2]-1,+m[1]); }
+    m=s.match(/^(\d{4})[\/\-](\d{1,2})[\/\-](\d{1,2})/); if(m) return new Date(+m[1],+m[2]-1,+m[3]);
+    const d=new Date(s); return isNaN(d)?null:d;
+  };
+  let d=null;
+  if(c.v!=null){ d = (c.v instanceof Date)?c.v:tryS(c.v); }
+  if((!d||isNaN(d)) && c.f) d=tryS(c.f);
+  return (d && !isNaN(d))?d:null;
+}
+function mesDe(d){ return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`; }
+function mesAnterior(k){ let [y,m]=k.split('-').map(Number); m--; if(m<1){m=12;y--;} return `${y}-${String(m).padStart(2,'0')}`; }
+// Existe algum lançamento nesse mês? Serve de "piso" para a recursão do Guardião (mês sem dados = sem campeão).
+function mesTemDados(mesKey){
+  if(!DADOS) return false;
+  return ['pedidos','separados','ops','alteracoes','documentos','conferidos','recebimento','avanco']
+    .some(k => (DADOS[k]||[]).some(r => r && r.data && mesDe(r.data)===mesKey));
+}
+const MESES_PT=['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
+function mesLabel(k){ const [y,m]=k.split('-'); return `${MESES_PT[+m-1]} ${y}`; }
+function fmt(n){ return Math.round(n).toLocaleString('pt-BR'); }
+function fmtMoeda(n){ return n.toLocaleString('pt-BR',{style:'currency',currency:'BRL'}); }
+function fmtCompacto(n){
+  if(n>=1e6) return 'R$ '+(n/1e6).toFixed(1).replace('.',',')+' mi';
+  if(n>=1e3) return 'R$ '+Math.round(n/1e3)+' mil';
+  return 'R$ '+Math.round(n);
+}
+
+// ---------- busca no Google Sheets (endpoint gviz, público) ----------
+// Leitura via <script> (JSONP) — NÃO passa pela regra de CORS, por isso funciona
+// a partir do GitHub Pages. O endpoint gviz devolve  cb({...})  e nós capturamos.
+function fetchSheet(cfg){
+  return new Promise((resolve, reject)=>{
+    const cb = '__gviz_' + Math.random().toString(36).slice(2) + '_' + Date.now();
+    const url = `https://docs.google.com/spreadsheets/d/${cfg.id}/gviz/tq`
+              + `?gid=${encodeURIComponent(cfg.gid)}&headers=1`
+              + `&tqx=out:json;responseHandler:${cb}&_=${Date.now()}`;
+    const s = document.createElement('script');
+    let feito = false;
+    const limpar = ()=>{ try{ delete window[cb]; }catch(_){ window[cb]=undefined; } if(s.parentNode) s.parentNode.removeChild(s); };
+    const timer = setTimeout(()=>{ if(feito) return; feito=true; limpar(); reject(new Error('timeout')); }, 12000);
+    window[cb] = (json)=>{ if(feito) return; feito=true; clearTimeout(timer); limpar();
+      try {
+        const rows = (json && json.table && json.table.rows) ? json.table.rows : [];
+        resolve(rows.map(r=>r.c||[]));
+      } catch(e){ reject(e); }
+    };
+    s.onerror = ()=>{ if(feito) return; feito=true; clearTimeout(timer); limpar(); reject(new Error('erro ao carregar')); };
+    s.referrerPolicy = 'no-referrer';
+    s.src = url;
+    document.head.appendChild(s);
+  });
+}
+
+async function carregarTudo(){
+  ERROS_FETCH = [];
+  const chaves = Object.keys(SHEETS);
+  const brutos = {};
+  await Promise.all(chaves.map(async k=>{
+    try { brutos[k] = await fetchSheet(SHEETS[k]); }
+    catch(e){ ERROS_FETCH.push(k); }
+  }));
+  chaves.forEach(k=>{ if(!(k in brutos)) brutos[k] = []; });
+
+  const novo = preprocessar(brutos);
+  const snap = carregarSnapshot();
+
+  if(ERROS_FETCH.length === chaves.length && snap){
+    // Sem rede: usa a última cópia salva por completo
+    DADOS = snap.dados; ULTIMA_SYNC = new Date(snap.ts); MODO_OFFLINE = true;
+  } else {
+    // Para abas que falharam pontualmente, aproveita a cópia anterior (se houver)
+    if(snap){ ERROS_FETCH.forEach(k=>{ if(snap.dados[k] && snap.dados[k].length) novo[k] = snap.dados[k]; }); }
+    DADOS = novo; ULTIMA_SYNC = new Date(); MODO_OFFLINE = false;
+    salvarSnapshot();
+  }
+  for(const k in cacheMes) delete cacheMes[k];
+}
+
+// Guarda a última leitura no aparelho, para abrir offline mostrando o último SYNC.
+function salvarSnapshot(){
+  try {
+    const plano = {};
+    for(const k in DADOS){ plano[k] = DADOS[k].map(r=>({ ...r, data: r.data ? r.data.getTime() : null })); }
+    localStorage.setItem('jornada_snapshot', JSON.stringify({ ts: ULTIMA_SYNC.getTime(), dados: plano }));
+  } catch(e){ /* cota cheia: ignora, segue sem cópia offline */ }
+}
+function carregarSnapshot(){
+  try {
+    const s = localStorage.getItem('jornada_snapshot'); if(!s) return null;
+    const o = JSON.parse(s); const d = {};
+    for(const k in o.dados){ d[k] = o.dados[k].map(r=>({ ...r, data: r.data!=null ? new Date(r.data) : null })); }
+    return { ts:o.ts, dados:d };
+  } catch(e){ return null; }
+}
+
+function preprocessar(b){
+  const D = { pedidos:[], separados:[], ops:[], alteracoes:[], documentos:[], conferidos:[], recebimento:[], avanco:[] };
+  (b.pedidos||[]).forEach(c=>{ const data=parseData(c[2]); if(!data) return; D.pedidos.push({ data, op:resolveOp(celStr(c[1])), valor:parseNum(c[4]) }); });
+  (b.separados||[]).forEach(c=>{ const data=parseData(c[2]); if(!data) return; D.separados.push({ data, op:resolveOp(celStr(c[1])), area:celStr(c[4]).toUpperCase() }); });
+  (b.ops||[]).forEach(c=>{ const data=parseData(c[2])||parseData(c[1]); if(!data) return; D.ops.push({ data, op:resolveOp(celStr(c[0])), area:celStr(c[7]).toUpperCase() }); });
+  (b.alteracoes||[]).forEach(c=>{ const data=parseData(c[0]); if(!data) return; D.alteracoes.push({ data, BOT:parseNum(c[2]), ARTHUR:parseNum(c[3]), GABRIEL:parseNum(c[4]), LUAN:parseNum(c[5]), RIQUELMI:parseNum(c[6]) }); });
+  (b.documentos||[]).forEach(c=>{ const data=parseData(c[4])||parseData(c[3]); if(!data) return; D.documentos.push({ data, tipo:celStr(c[2]).toUpperCase(), op:resolveOp(celStr(c[6])), valor:parseNum(c[5]) }); });
+  (b.conferidos||[]).forEach(c=>{ const data=parseData(c[3]); if(!data) return; D.conferidos.push({ data, op:resolveOp(celStr(c[4])) }); });
+  (b.recebimento||[]).forEach(c=>{ const data=parseData(c[1]); if(!data) return; D.recebimento.push({ data, op:resolveOp(celStr(c[2])), valor:parseNum(c[7]) }); });
+  (b.avanco||[]).forEach(c=>{ const data=parseData(c[0]); if(!data) return; D.avanco.push({ data, addr:parseNum(c[1]), varia:parseNum(c[2]), total:parseNum(c[3]), a00:parseNum(c[4]), a01:parseNum(c[5]), a02:parseNum(c[6]), nd:parseNum(c[7]) }); });
+  return D;
+}
+
+// ---------- meses disponíveis ----------
+function mesesDisponiveis(){
+  const set = new Set();
+  if(DADOS){
+    ['pedidos','separados','ops','alteracoes','documentos','conferidos','recebimento','avanco'].forEach(k=>{
+      DADOS[k].forEach(r=> set.add(mesDe(r.data)));
+    });
+  }
+  const hoje = new Date(); set.add(mesDe(hoje));
+  return Array.from(set).sort().reverse();
+}
+
+// ---------- núcleo de cálculo ----------
+function novoBreakdown(){ return { valorPedidos:0, qtdPedidos:0, separados:0, ops:0, ajustes:0, nfFatura:0, conhecFrete:0, conferidos:0, recebidos:0 }; }
+
+function computeTotais(mesKey, guardiaoId){
+  const res = {}; PARTICIPANTES.forEach(o=> res[o.id]={ b:novoBreakdown() });
+  const B = id => res[id]?res[id].b:null;
+  DADOS.pedidos.forEach(r=>{ if(mesDe(r.data)!==mesKey) return; const b=B(r.op); if(!b) return; b.qtdPedidos++; b.valorPedidos+=r.valor; });
+  DADOS.separados.forEach(r=>{ if(mesDe(r.data)!==mesKey) return; const b=B(r.op); if(!b) return; b.separados++; });
+  DADOS.ops.forEach(r=>{ if(mesDe(r.data)!==mesKey) return; const b=B(r.op); if(!b) return; b.ops++; });
+  DADOS.alteracoes.forEach(r=>{ if(mesDe(r.data)!==mesKey) return; ['ARTHUR','GABRIEL','LUAN','RIQUELMI','BOT'].forEach(id=>{ if(res[id]) res[id].b.ajustes += (r[id]||0); }); });
+  DADOS.documentos.forEach(r=>{ if(mesDe(r.data)!==mesKey) return; const b=B(r.op); if(!b) return; if(r.tipo.includes('FATURA')||r.tipo.includes('NF')) b.nfFatura++; else if(r.tipo.includes('FRETE')||r.tipo.includes('CONHEC')) b.conhecFrete++; });
+  DADOS.conferidos.forEach(r=>{ if(mesDe(r.data)!==mesKey) return; const b=B(r.op); if(!b) return; b.conferidos++; });
+  DADOS.recebimento.forEach(r=>{ if(mesDe(r.data)!==mesKey) return; const b=B(r.op); if(!b) return; b.recebidos++; });
+
+  PARTICIPANTES.forEach(o=>{
+    const R=res[o.id], b=R.b;
+    R.xpPedidos   = b.qtdPedidos * XP.pedido;
+    R.xpSeparados = b.separados*XP.separado;
+    R.xpOps       = b.ops*XP.op;
+    R.xpAjustes   = b.ajustes*XP.ajuste;
+    R.xpNf        = b.nfFatura*XP.nf;
+    R.xpCt        = b.conhecFrete*XP.ct;
+    R.xpConf      = b.conferidos*XP.conferido;
+    R.xpReceb     = b.recebidos*XP.recebido;
+    R.recompensaXP = R.xpPedidos+R.xpSeparados+R.xpOps+R.xpAjustes+R.xpNf+R.xpCt+R.xpConf+R.xpReceb;
+    const aj = (AJUSTES_MANUAIS[mesKey] && AJUSTES_MANUAIS[mesKey][o.id]) || {};
+    R.aj = { atrasos:aj.atrasos||0, faltas:aj.faltas||0, rnc:aj.rnc||0, errosDoc:aj.errosDoc||0, missoesDiarias:aj.missoesDiarias||0, bonusExtra:aj.bonusExtra||0 };
+    R.missaoXP = R.aj.missoesDiarias*XP.missaoDiaria;
+    R.bonusXP  = R.aj.bonusExtra;
+    R.penalXP  = R.aj.atrasos*PEN.atraso + R.aj.faltas*PEN.falta + R.aj.rnc*PEN.rnc + R.aj.errosDoc*PEN.erroDoc;
+    let positivo = R.recompensaXP + R.missaoXP + R.bonusXP;
+    R.ehGuardiao = (o.id===guardiaoId);
+    R.bonusGuardiao = R.ehGuardiao ? Math.round(positivo*0.10) : 0;
+    positivo += R.bonusGuardiao;
+    R.positivo = positivo;
+    R.total = positivo - R.penalXP;
+  });
+  return res;
+}
+
+function campeaoDoMes(mesKey){
+  if(!mesKey || !DADOS || !mesTemDados(mesKey)) return null;   // sem dados no mês → sem campeão (encerra a recursão)
+  const { totais } = computo(mesKey);   // MESMO XP que o Hall exibe (já com o bônus de Guardião do mês)
+  // O prêmio (R$) é proporcional ao XP líquido positivo, então o líder de R$ = maior XP líquido.
+  let best=null, bestXP=-Infinity;
+  PARTICIPANTES.forEach(o=>{ if(totais[o.id].total>bestXP){ bestXP=totais[o.id].total; best=o.id; } });
+  return bestXP>0 ? best : null;   // só há destaque (e Guardião) com desempenho positivo
+}
+
+function computo(mesKey){
+  if(cacheMes[mesKey]) return cacheMes[mesKey];
+  const guardiaoId = GUARDIAO_MANUAL[mesKey] || campeaoDoMes(mesAnterior(mesKey));
+  const totais = computeTotais(mesKey, guardiaoId);
+  cacheMes[mesKey] = { guardiaoId, totais };
+  return cacheMes[mesKey];
+}
+
+function nivelInfo(xp){
+  const x=Math.max(0,Math.floor(xp));
+  const nivel=Math.floor(x/XP_POR_NIVEL)+1, xpNoNivel=x%XP_POR_NIVEL, progresso=(xpNoNivel/XP_POR_NIVEL)*100;
+  let classe,emoji; if(nivel<=10){classe='Bronze';emoji='🥉';}else if(nivel<=25){classe='Prata';emoji='🥈';}else if(nivel<=50){classe='Ouro';emoji='🥇';}else if(nivel<=100){classe='Diamante';emoji='💎';}else{classe='Rubi';emoji='🔴';}
+  return {nivel,xpNoNivel,progresso,classe,emoji};
+}
+function rankingOrdenado(mesKey){
+  const { totais } = computo(mesKey);
+  const P = calcularPremios(mesKey);
+  return PARTICIPANTES.map(o=>({ op:o, R:totais[o.id], ni:nivelInfo(totais[o.id].total), premio:P.premio[o.id] }))
+                   .sort((a,b)=> (b.premio - a.premio) || (b.R.total - a.R.total));  // por R$; empate → por XP
+}
+
+// ---------- avanço de estoque ----------
+function avancoMes(mesKey){
+  const rows = DADOS.avanco.filter(r=>mesDe(r.data)===mesKey).sort((a,b)=>a.data-b.data);
+  // "Endereçados no mês" = soma do que foi endereçado A CADA DIA (coluna C).
+  // (a coluna B é o total acumulado; somá-la contaria o mesmo produto várias vezes)
+  const somaAddr = rows.reduce((s,r)=>s+r.varia,0);
+  const ult = rows.length? rows[rows.length-1] : null;
+  return { rows, somaAddr, ult };
+}
+
+// ---------- bonificação / prêmio em R$ ----------
+// Pool do mês = R$ 500 × (% da meta atingida, SEM teto: 160% da meta => R$ 800).
+// Esse valor é rateado entre TODOS os participantes (4 operadores + mestre),
+// proporcional ao XP líquido de cada um no mês (piso em 0 para quem ficou negativo).
+const PREMIO_BASE = 500;
+function calcularPremios(mesKey){
+  const { totais } = computo(mesKey);
+  const av   = avancoMes(mesKey);
+  const meta = META_MENSAL[mesKey] || 0;
+  const metaFrac = meta>0 ? (av.somaAddr/meta) : 0;   // sem teto
+  const pool = PREMIO_BASE * metaFrac;
+  let somaPeso = 0; const peso = {};
+  PARTICIPANTES.forEach(o=>{ const w=Math.max(0, totais[o.id].total); peso[o.id]=w; somaPeso+=w; });
+  const premio = {};
+  PARTICIPANTES.forEach(o=>{ premio[o.id] = somaPeso>0 ? pool*(peso[o.id]/somaPeso) : 0; });
+  return { meta, metaFrac, pool, premio, somaAddr:av.somaAddr };
+}
+// Quanto do prêmio total de um participante veio de UM indicador específico.
+// (a soma dos 8 indicadores = prêmio total do participante)
+function premioDoIndicador(R, premioTotal, xpDoIndicador){
+  return R.recompensaXP>0 ? premioTotal*(xpDoIndicador/R.recompensaXP) : 0;
+}
+
+// ---------- avatares pixel ----------
+function avatarSVG(op, cls){
+  if(op.isMaster){
+    return `<svg class="${cls}" viewBox="0 0 16 16" style="border-color:#c084fc">
+      <rect width="16" height="16" fill="#311042"/><rect x="3" y="1" width="10" height="3" fill="#ffd700"/>
+      <rect x="4" y="0" width="2" height="1" fill="#ffd700"/><rect x="7" y="0" width="2" height="1" fill="#ffd700"/><rect x="10" y="0" width="2" height="1" fill="#ffd700"/>
+      <rect x="3" y="4" width="10" height="6" fill="#6b21a8"/><rect x="5" y="6" width="2" height="2" fill="#00ffff"/><rect x="9" y="6" width="2" height="2" fill="#00ffff"/>
+      <rect x="3" y="10" width="10" height="6" fill="#581c87"/></svg>`;
+  }
+  return `<svg class="${cls}" viewBox="0 0 16 16">
+    <rect width="16" height="16" fill="#1e1b4b"/>
+    <rect x="4" y="2" width="8" height="3" fill="${op.cabelo}"/>
+    <rect x="4" y="5" width="8" height="5" fill="${op.skin}"/>
+    <rect x="5" y="6" width="2" height="2" fill="#000"/><rect x="9" y="6" width="2" height="2" fill="#000"/>
+    <rect x="3" y="10" width="10" height="6" fill="${op.roupa}"/></svg>`;
+}
+
+// ---------- gráfico de barras (pixel) ----------
+function chartBarras(itens, cor){
+  if(!itens.length) return `<div class="tiny" style="padding:8px 0">Sem dados no período.</div>`;
+  const max = Math.max(1, ...itens.map(i=>i.v));
+  const cols = itens.map(i=>{
+    const h = Math.max(2, Math.round((i.v/max)*100));
+    const rot = cor==='roxo'?'roxo':'';
+    const v = i.v>0? `<div class="chart-val">${i.v}</div>`:'';
+    return `<div class="col">${v}<div class="bar ${rot}" style="height:${h}%"></div></div>`;
+  }).join('');
+  const xs = itens.map(i=>`<span>${i.l}</span>`).join('');
+  return `<div class="chart">${cols}</div><div class="chart-x">${xs}</div>`;
+}
+
+/* ==========================================================================
+   RENDERIZAÇÃO
+   ========================================================================== */
+
+// ---------- LOGIN ----------
+let selUser = 0;
+function listaUsuarios(){ return [COORDENADOR, ...OPERADORES]; }
+function renderLogin(){
+  const cont = document.getElementById('charList'); cont.innerHTML='';
+  listaUsuarios().forEach((u,i)=>{
+    const div = document.createElement('div');
+    div.className = `char-option ${u.isMaster?'master-option':''} ${i===selUser?'selected':''}`;
+    div.onclick = ()=>selChar(i);
+    div.innerHTML = `${avatarSVG(u,'pixel-avatar')}
+      <span class="char-name">${u.nome}${u.isMaster?' <span class="master-badge">MESTRE</span>':''}</span>
+      <div class="radio-pixel"></div>`;
+    cont.appendChild(div);
+  });
+}
+function selChar(i){ selUser=i; document.getElementById('errorMsg').style.display='none';
+  document.querySelectorAll('.char-option').forEach((el,k)=> el.classList.toggle('selected', k===i)); }
+function handleLogin(){
+  const u = listaUsuarios()[selUser];
+  const senha = document.getElementById('password').value;
+  if(senha!==u.senha){ document.getElementById('errorMsg').style.display='block'; return; }
+  localStorage.setItem('jornada_user', u.id);
+  document.getElementById('password').value='';
+  entrar(u);
+}
+function fazerLogout(){ localStorage.removeItem('jornada_user'); mostrar('tela-login'); renderLogin(); }
+function entrar(u){
+  if(u.isMaster){ mostrar('tela-coordenador'); montarSeletor('mesCoord'); renderCoordenador(); }
+  else { mostrar('tela-operador'); montarSeletor('mesOp'); renderOperador(); }
+}
+function mostrar(id){ document.querySelectorAll('.view-section').forEach(s=>s.classList.remove('active')); document.getElementById(id).classList.add('active'); }
+
+function montarSeletor(selId){
+  const sel = document.getElementById(selId); const meses = mesesDisponiveis();
+  sel.innerHTML = meses.map(m=>`<option value="${m}">${mesLabel(m)}</option>`).join('');
+}
+
+// ---------- BANNER DE ERRO ----------
+function mostrarErros(bannerId){
+  const el = document.getElementById(bannerId);
+  if(!ERROS_FETCH.length){ el.style.display='none'; return; }
+  el.style.display='block';
+  el.innerHTML = `<b>⚠️ Não consegui ler ${ERROS_FETCH.length} pergaminho(s):</b>
+    <ul>${ERROS_FETCH.map(k=>`<li>${k}</li>`).join('')}</ul>
+    Confira se cada planilha está compartilhada como "Qualquer pessoa com o link → Leitor" e se a página está sendo aberta por https:// (não como arquivo local).`;
+}
+
+function textoSync(){
+  if(!ULTIMA_SYNC) return '';
+  const q = ULTIMA_SYNC.toLocaleString('pt-BR');
+  return MODO_OFFLINE ? `📴 OFFLINE — mostrando dados de ${q}` : `Última sincronização: ${q}`;
+}
+
+// ---------- COORDENADOR ----------
+function renderCoordenador(){
+  const mes = document.getElementById('mesCoord').value;
+  mostrarErros('banner-erro-coord');
+  document.getElementById('sync-info-coord').textContent = textoSync();
+
+  const { totais, guardiaoId } = computo(mes);
+
+  // Guardião banner
+  const gDiv = document.getElementById('coord-guardiao');
+  if(guardiaoId){
+    const gop = OPERADORES.find(o=>o.id===guardiaoId);
+    gDiv.innerHTML = `<div class="guardiao-banner">
+      <div class="t">🛡️ GUARDIÃO DO ESTOQUE</div>
+      <div class="n">${gop?gop.nome:guardiaoId}</div>
+      <div class="d">Campeão do mês anterior — recebe +10% de XP em todas as tarefas deste mês.</div></div>`;
+  } else { gDiv.innerHTML=''; }
+
+  // Meta
+  const av = avancoMes(mes);
+  const meta = META_MENSAL[mes];
+  const metaDiv = document.getElementById('coord-meta');
+  if(meta){
+    const pc = Math.min(100, Math.round((av.somaAddr/meta)*100));
+    metaDiv.innerHTML = `<div class="meta-line"><span>Endereçados no mês</span><b>${fmt(av.somaAddr)} / ${fmt(meta)}</b></div>
+      <div class="bar-bg"><div class="bar-fill" style="width:${pc}%"></div></div>
+      <div class="tiny" style="margin-top:6px">${pc}% da meta do mês.</div>`;
+  } else {
+    metaDiv.innerHTML = `<div class="meta-line"><span>Endereçados no mês</span><b>${fmt(av.somaAddr)}</b></div>
+      <div class="tiny">Meta do mês ainda não definida (preencha <span class="xp-chip">META_MENSAL</span> na configuração).</div>`;
+  }
+
+  // Macro (totais da equipe)
+  let tPed=0,vPed=0,tSep=0,tOps=0,tAju=0,tNf=0,tCt=0,tConf=0,tReceb=0;
+  PARTICIPANTES.forEach(o=>{ const b=totais[o.id].b;
+    tPed+=b.qtdPedidos; vPed+=b.valorPedidos; tSep+=b.separados; tOps+=b.ops; tAju+=b.ajustes;
+    tNf+=b.nfFatura; tCt+=b.conhecFrete; tConf+=b.conferidos; tReceb+=b.recebidos; });
+  document.getElementById('coord-macro').innerHTML = `
+    <div class="stat-box"><div class="stat-label">Pedidos aprovados</div><div class="stat-value">${fmt(tPed)}</div></div>
+    <div class="stat-box"><div class="stat-label">Valor aprovado</div><div class="stat-value">${fmtCompacto(vPed)}</div></div>
+    <div class="stat-box"><div class="stat-label">Prod. separados</div><div class="stat-value">${fmt(tSep)}</div></div>
+    <div class="stat-box"><div class="stat-label">OPs finalizadas</div><div class="stat-value">${fmt(tOps)}</div></div>
+    <div class="stat-box"><div class="stat-label">Prod. ajustados</div><div class="stat-value">${fmt(tAju)}</div></div>
+    <div class="stat-box"><div class="stat-label">Prod. conferidos</div><div class="stat-value">${fmt(tConf)}</div></div>
+    <div class="stat-box"><div class="stat-label">NF Fatura</div><div class="stat-value">${fmt(tNf)}</div></div>
+    <div class="stat-box"><div class="stat-label">Conh. Frete</div><div class="stat-value">${fmt(tCt)}</div></div>
+    <div class="stat-box"><div class="stat-label">Recebimentos</div><div class="stat-value">${fmt(tReceb)}</div></div>
+    <div class="stat-box"><div class="stat-label">Total heróis</div><div class="stat-value">${OPERADORES.length}</div></div>`;
+
+  // Avanço de estoque (snapshot do último registro + gráfico diário)
+  const subEl = document.getElementById('coord-avanco-sub');
+  const areasEl = document.getElementById('coord-areas');
+  if(av.ult){
+    const done = av.ult.a00+av.ult.a01+av.ult.a02;
+    const base = (av.ult.total>0? av.ult.total : done);
+    const totalGeral = base + av.ult.nd;
+    const pcGeral = totalGeral>0? Math.round((base/totalGeral)*100) : 0;
+    subEl.innerHTML = `Último registro em ${av.ult.data.toLocaleDateString('pt-BR')} — progresso de ajuste: <b style="color:var(--ouro)">${fmt(base)}</b> · faltam <b style="color:#fca5a5">${fmt(av.ult.nd)}</b> (N/D) · <b>${pcGeral}%</b> concluído.`;
+    areasEl.innerHTML = `
+      <div class="area-box"><div class="a-l">A00</div><div class="a-v">${fmt(av.ult.a00)}</div></div>
+      <div class="area-box"><div class="a-l">A01</div><div class="a-v">${fmt(av.ult.a01)}</div></div>
+      <div class="area-box"><div class="a-l">A02</div><div class="a-v">${fmt(av.ult.a02)}</div></div>
+      <div class="area-box"><div class="a-l">N/D</div><div class="a-v">${fmt(av.ult.nd)}</div></div>`;
+  } else {
+    subEl.innerHTML = `Sem registros de avanço neste mês.`;
+    areasEl.innerHTML='';
+  }
+  const itensAv = av.rows.map(r=>({ l:String(r.data.getDate()), v:r.varia }));
+  document.getElementById('coord-chart-avanco').innerHTML = chartBarras(itensAv,'roxo');
+
+  // Projetos
+  const projEl = document.getElementById('coord-projetos');
+  let projetos = [];
+  if(av.ult){
+    const done = (av.ult.total>0? av.ult.total : av.ult.a00+av.ult.a01+av.ult.a02);
+    const tot = done + av.ult.nd;
+    projetos.push({ nome:'Endereçamento de Estoque (100%)', progresso: tot>0? Math.round((done/tot)*100):0 });
+  }
+  projetos = projetos.concat(PROJETOS_EXTRA);
+  projEl.innerHTML = projetos.length ? projetos.map(p=>`
+    <div class="projeto"><div class="p-h"><span>${p.nome}</span><b>${p.progresso}%</b></div>
+    <div class="bar-bg"><div class="bar-fill roxo" style="width:${Math.min(100,p.progresso)}%"></div></div></div>`).join('')
+    : `<div class="tiny">Nenhum projeto cadastrado.</div>`;
+
+  // Hall da Fama
+  const rk = rankingOrdenado(mes);
+  const tb = document.querySelector('#coord-hall tbody'); tb.innerHTML='';
+  rk.forEach((e,i)=>{
+    const tr=document.createElement('tr'); if(i===0 && e.R.total>0) tr.className='lider-row';
+    const coroa = (i===0 && e.R.total>0)?'👑 ':'';
+    const bg = e.R.ehGuardiao?'<span class="guardiao-badge">GUARDIÃO</span>':'';
+    tr.innerHTML = `<td>${coroa}${e.op.nome.split(' ')[0]} ${bg}</td>
+      <td><span class="classe-tag cl-${e.ni.classe}">${e.ni.emoji} ${e.ni.classe}</span></td>
+      <td>Nv ${e.ni.nivel}</td>
+      <td class="pts-cell">${fmtMoeda(e.premio)}<br><span class="pts-xp">${fmt(e.R.total)} XP</span></td>`;
+    tb.appendChild(tr);
+  });
+
+  // Extrato por operador (colapsável)
+  const opEl = document.getElementById('coord-operadores'); opEl.innerHTML='';
+  rk.forEach(e=>{
+    const d=document.createElement('details'); d.className='op-card';
+    d.innerHTML = `<summary>${avatarSVG(e.op,'mini-av')}
+        <span class="op-nm">${e.op.nome.split(' ')[0]} ${e.R.ehGuardiao?'<span class="guardiao-badge">G</span>':''}</span>
+        <span class="op-pt">${fmt(e.R.total)} XP</span><span class="chev">▶</span></summary>
+      <div class="op-body">${tabelaExtrato(e.R)}</div>`;
+    opEl.appendChild(d);
+  });
+
+  renderPremios(mes);       // painel de bonificação (R$)
+  renderIndicadores(mes);   // ranking por indicador com bônus em R$
+}
+
+// ---------- painel de prêmio (coordenador) ----------
+function renderPremios(mesKey){
+  const el = document.getElementById('coord-premios'); if(!el) return;
+  const { totais } = computo(mesKey);
+  const P = calcularPremios(mesKey);
+  const pctMeta = Math.round(P.metaFrac*100);
+  let topo;
+  if(!P.meta){
+    topo = `<div class="premio-tot"><div class="v">R$ 0,00</div>
+      <div class="l">Defina a meta do mês em <span class="xp-chip">META_MENSAL</span> para liberar o prêmio.</div></div>`;
+  } else {
+    topo = `<div class="premio-tot"><div class="v">${fmtMoeda(P.pool)}</div>
+      <div class="l">Prêmio do mês · ${fmt(P.somaAddr)} / ${fmt(P.meta)} endereçados (<b style="color:var(--ouro)">${pctMeta}%</b> da meta)</div></div>`;
+  }
+  const linhas = PARTICIPANTES
+    .map(o=>({ o, R:totais[o.id], v:P.premio[o.id] }))
+    .sort((a,b)=> b.v - a.v)
+    .map(x=>`<tr><td>${x.o.nome.split(' ')[0]}</td>
+        <td class="q">${fmt(x.R.total)} XP</td><td class="r">${fmtMoeda(x.v)}</td></tr>`).join('');
+  el.innerHTML = topo + `<table class="premio-table"><tbody>${linhas}</tbody></table>`;
+}
+
+// ---------- ranking por indicador (coordenador) ----------
+const INDICADORES = [
+  { nome:'Pedidos aprovados',  q:R=>R.b.qtdPedidos, xp:R=>R.xpPedidos },
+  { nome:'Produtos separados', q:R=>R.b.separados,  xp:R=>R.xpSeparados },
+  { nome:'OPs finalizadas',    q:R=>R.b.ops,        xp:R=>R.xpOps },
+  { nome:'Produtos ajustados', q:R=>R.b.ajustes,    xp:R=>R.xpAjustes },
+  { nome:'NF Fatura',          q:R=>R.b.nfFatura,   xp:R=>R.xpNf },
+  { nome:'Conh. de Frete',     q:R=>R.b.conhecFrete,xp:R=>R.xpCt },
+  { nome:'Produtos conferidos',q:R=>R.b.conferidos, xp:R=>R.xpConf },
+  { nome:'Material recebido',  q:R=>R.b.recebidos,  xp:R=>R.xpReceb },
+];
+function renderIndicadores(mesKey){
+  const el = document.getElementById('coord-indicadores'); if(!el) return;
+  const { totais } = computo(mesKey);
+  const P = calcularPremios(mesKey);
+  el.innerHTML = INDICADORES.map(ind=>{
+    const rows = PARTICIPANTES.map(o=>{
+      const R=totais[o.id];
+      return { o, qtd:ind.q(R), xp:ind.xp(R), rs:premioDoIndicador(R, P.premio[o.id], ind.xp(R)) };
+    }).sort((a,b)=> b.qtd - a.qtd);
+    const totQ = rows.reduce((s,r)=>s+r.qtd,0);
+    const body = rows.map(r=>`<tr><td>${r.o.nome.split(' ')[0]}</td>
+        <td class="n">${fmt(r.qtd)}</td><td class="x">${fmt(r.xp)}</td><td class="r">${fmtMoeda(r.rs)}</td></tr>`).join('');
+    return `<details class="op-card"><summary>
+        <span class="op-nm">${ind.nome}</span>
+        <span class="op-pt">${fmt(totQ)}</span><span class="chev">▶</span></summary>
+      <div class="op-body"><table class="ind-table">
+        <thead><tr><th>OPERADOR</th><th>QTD</th><th>XP</th><th>R$</th></tr></thead>
+        <tbody>${body}</tbody></table></div></details>`;
+  }).join('');
+}
+
+// tabela de extrato reutilizável
+function tabelaExtrato(R){
+  const b=R.b;
+  const linha=(nome,q,xp,cls='')=>`<tr class="${cls}"><td>${nome}</td><td class="q">${q}</td><td class="x">${xp>=0?'+':''}${fmt(xp)}</td></tr>`;
+  let html = `<table class="bd-table"><tbody>`;
+  html += linha('Pedidos aprovados', b.qtdPedidos+'×', R.xpPedidos);
+  html += linha('Produtos separados', b.separados+'×', R.xpSeparados);
+  html += linha('OPs finalizadas', b.ops+'×', R.xpOps);
+  html += linha('Produtos ajustados', b.ajustes+'×', R.xpAjustes);
+  html += linha('NF Fatura', b.nfFatura+'×', R.xpNf);
+  html += linha('Conh. de Frete', b.conhecFrete+'×', R.xpCt);
+  html += linha('Produtos conferidos', b.conferidos+'×', R.xpConf);
+  html += linha('Material recebido', b.recebidos+'×', R.xpReceb);
+  if(R.aj.missoesDiarias) html += linha('Missões diárias', R.aj.missoesDiarias+'×', R.missaoXP);
+  if(R.bonusXP) html += linha('Bônus extra', '—', R.bonusXP);
+  html += linha('Subtotal de recompensas', '', R.recompensaXP + R.missaoXP + R.bonusXP, 'sub');
+  if(R.bonusGuardiao) html += linha('🛡️ Bônus Guardião (+10%)', '', R.bonusGuardiao, 'bonus');
+  if(R.aj.atrasos)  html += linha('Atrasos', R.aj.atrasos+'×', -(R.aj.atrasos*PEN.atraso), 'neg');
+  if(R.aj.faltas)   html += linha('Faltas', R.aj.faltas+'×', -(R.aj.faltas*PEN.falta), 'neg');
+  if(R.aj.rnc)      html += linha('RNC', R.aj.rnc+'×', -(R.aj.rnc*PEN.rnc), 'neg');
+  if(R.aj.errosDoc) html += linha('NF/CT lançada errada', R.aj.errosDoc+'×', -(R.aj.errosDoc*PEN.erroDoc), 'neg');
+  html += linha('TOTAL DO MÊS', '', R.total, 'tot');
+  html += `</tbody></table>`;
+  return html;
+}
+
+// ---------- OPERADOR ----------
+function renderOperador(){
+  const uid = localStorage.getItem('jornada_user');
+  const op = OPERADORES.find(o=>o.id===uid);
+  if(!op){ fazerLogout(); return; }
+  const mes = document.getElementById('mesOp').value;
+  mostrarErros('banner-erro-op');
+  document.getElementById('sync-info-op').textContent = textoSync();
+
+  const { totais } = computo(mes);
+  const R = totais[op.id]; const ni = nivelInfo(R.total);
+
+  document.getElementById('op-avatar').innerHTML = avatarSVG(op,'pixel-avatar');
+  document.getElementById('op-nome').textContent = op.nome;
+  document.getElementById('op-classe').innerHTML = `<span class="classe-tag cl-${ni.classe}">${ni.emoji} ${ni.classe}</span> · Nível ${ni.nivel}`;
+  document.getElementById('op-progress').style.width = ni.progresso+'%';
+  document.getElementById('op-xp').textContent = `${fmt(ni.xpNoNivel)} / ${fmt(XP_POR_NIVEL)} XP p/ próximo nível`;
+
+  // Guardião tag + posição no ranking
+  const rk = rankingOrdenado(mes);
+  const pos = rk.findIndex(e=>e.op.id===op.id)+1;
+  const tagEl = document.getElementById('op-guardiao-tag');
+  tagEl.innerHTML = R.ehGuardiao
+    ? `<div class="guardiao-banner" style="margin:10px 0 0"><div class="t">🛡️ VOCÊ É O GUARDIÃO DO ESTOQUE</div><div class="d">+10% de XP em todas as tarefas deste mês!</div></div>`
+    : '';
+
+  const premios = calcularPremios(mes);
+  const meuPremio = premios.premio[op.id] || 0;
+  document.getElementById('op-resumo').innerHTML = `
+    <div class="stat-box"><div class="stat-label">XP total no mês</div><div class="stat-value">${fmt(R.total)}</div></div>
+    <div class="stat-box"><div class="stat-label">Posição no Hall</div><div class="stat-value">${pos}º</div></div>
+    <div class="prize-box"><div class="l">💰 Valor a receber (prêmio do mês)</div><div class="v">${fmtMoeda(meuPremio)}</div></div>`;
+
+  // Extrato
+  document.getElementById('op-extrato-wrap').innerHTML = tabelaExtrato(R);
+
+  // Informações do projeto (endereçamento)
+  renderProjetoOperador(mes);
+
+  // Power-up do dia (estável por dia + operador)
+  const pu = POWERUPS[ hashDia(hojeStr()+'|'+op.id) % POWERUPS.length ];
+  document.getElementById('op-powerup-nome').textContent = pu.nome;
+  document.getElementById('op-powerup-efeito').textContent = pu.efeito;
+
+  // Missão diária (mesma para todos no dia)
+  const mis = MISSOES_POOL[ hashDia(hojeStr()) % MISSOES_POOL.length ];
+  document.getElementById('op-missao-txt').textContent = mis;
+  const chk = document.getElementById('op-missao-check');
+  const marcada = localStorage.getItem('missao_'+op.id+'_'+hojeStr())==='1';
+  chk.checked = marcada;
+
+  // Histórico de XP por mês
+  const meses = mesesDisponiveis().slice().reverse(); // crescente p/ o gráfico
+  const itens = meses.map(m=>{
+    const t = computo(m).totais[op.id];
+    return { l: MESES_PT[+m.split('-')[1]-1].slice(0,3), v: Math.max(0, t? t.total : 0) };
+  });
+  document.getElementById('op-historico').innerHTML = chartBarras(itens,'');
+}
+
+// Card "Informações do Projeto" no painel do operador.
+function renderProjetoOperador(mes){
+  const el = document.getElementById('op-projeto'); if(!el) return;
+  const av = avancoMes(mes);
+  const meta = META_MENSAL[mes] || 0;
+  // % total já endereçada (último registro do avanço)
+  let pctTotal = 0, txtTotal = 'Sem registro de avanço ainda.';
+  if(av.ult){
+    const base = (av.ult.total>0? av.ult.total : av.ult.a00+av.ult.a01+av.ult.a02);
+    const geral = base + av.ult.nd;
+    pctTotal = geral>0? Math.round((base/geral)*100) : 0;
+    txtTotal = `${fmt(base)} de ${fmt(geral)} produtos · faltam ${fmt(av.ult.nd)} (N/D)`;
+  }
+  // avanço do mês (endereçados no mês × meta)
+  let mesLinha;
+  if(meta){
+    const pcMes = Math.min(100, Math.round((av.somaAddr/meta)*100));
+    mesLinha = `<div class="meta-line" style="margin-top:12px"><span>Avanço do mês (meta)</span><b>${fmt(av.somaAddr)} / ${fmt(meta)}</b></div>
+      <div class="bar-bg"><div class="bar-fill roxo" style="width:${pcMes}%"></div></div>
+      <div class="tiny" style="margin-top:6px">${pcMes}% da meta do mês.</div>`;
+  } else {
+    mesLinha = `<div class="meta-line" style="margin-top:12px"><span>Endereçados no mês</span><b>${fmt(av.somaAddr)}</b></div>
+      <div class="tiny">Meta do mês ainda não definida.</div>`;
+  }
+  el.innerHTML = `<div class="meta-line"><span>Estoque endereçado (total)</span><b>${pctTotal}%</b></div>
+    <div class="bar-bg"><div class="bar-fill" style="width:${pctTotal}%"></div></div>
+    <div class="tiny" style="margin-top:6px">${txtTotal}</div>` + mesLinha;
+}
+
+function marcarMissao(chk){
+  const uid = localStorage.getItem('jornada_user');
+  localStorage.setItem('missao_'+uid+'_'+hojeStr(), chk.checked?'1':'0');
+}
+
+// ---------- util diário ----------
+function hashDia(seed){ let h=0; const s=String(seed); for(let i=0;i<s.length;i++){ h=(h*31 + s.charCodeAt(i))>>>0; } return h; }
+function hojeStr(){ const d=new Date(); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`; }
+
+// ---------- SYNC ----------
+async function sincronizar(){
+  const msg=document.getElementById('loading-msg');
+  document.getElementById('loading').style.display='flex';
+  msg.textContent='Reunindo os pergaminhos da guilda...';
+  try { await carregarTudo(); } catch(e){}
+  document.getElementById('loading').style.display='none';
+  const ativo = document.querySelector('.view-section.active');
+  if(ativo && ativo.id==='tela-coordenador'){ montarSeletor('mesCoord'); renderCoordenador(); }
+  else if(ativo && ativo.id==='tela-operador'){ montarSeletor('mesOp'); renderOperador(); }
+}
+
+// ---------- INICIALIZAÇÃO ----------
+let JA_INICIADO = false;
+function irParaTelaInicial(){
+  if(JA_INICIADO) return; JA_INICIADO = true;
+  const ld = document.getElementById('loading'); if(ld) ld.style.display='none';
+  // Garante uma estrutura de dados válida mesmo sem rede (evita travar/erro ao renderizar).
+  if(!DADOS){ const s = carregarSnapshot(); DADOS = (s && s.dados) ? s.dados : preprocessar({}); }
+  renderLogin();
+  const uid = localStorage.getItem('jornada_user');
+  if(uid===COORDENADOR.id){ entrar(COORDENADOR); }
+  else { const op = OPERADORES.find(o=>o.id===uid); if(op){ entrar(op); } else { mostrar('tela-login'); } }
+  mostrarErros('banner-erro-login');
+}
+
+async function iniciar(){
+  const msgs=['Invocando os pergaminhos da guilda...','Consultando os anais do estoque...','Somando o XP dos heróis...','Selando as correias mágicas...'];
+  let i=0; const el=document.getElementById('loading-msg');
+  const it=setInterval(()=>{ i=(i+1)%msgs.length; if(el) el.textContent=msgs[i]; }, 900);
+  // Failsafe: se a busca demorar demais, abre a tela mesmo assim (nunca fica preso no loading).
+  const failsafe=setTimeout(()=>{ clearInterval(it); irParaTelaInicial(); }, 15000);
+  try { await carregarTudo(); } catch(e){}
+  clearInterval(it); clearTimeout(failsafe);
+  irParaTelaInicial();
+}
+
+// O script está no fim do <body>: o DOM já existe. Inicia SEM esperar o evento 'load'
+// (que aguarda fontes/recursos externos e poderia prender a tela de abertura numa rede lenta).
+if(document.readyState==='loading') document.addEventListener('DOMContentLoaded', iniciar);
+else iniciar();
+</script>
+
+<script>
+  // Registro do PWA (service worker). Só funciona por https:// (GitHub Pages) — em file:// é ignorado.
+  if('serviceWorker' in navigator){
+    window.addEventListener('load', ()=>{ navigator.serviceWorker.register('./sw.js').catch(()=>{}); });
+  }
+</script>
+</body>
+</html>
