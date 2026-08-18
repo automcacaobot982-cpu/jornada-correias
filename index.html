@@ -265,7 +265,7 @@
     .ind-table td.n { text-align:center; color:var(--roxo2); font-size:8pt; }
     .ind-table td.x { text-align:center; font-family:'Press Start 2P',cursive; font-size:4.5pt; color:var(--ouro); }
     .ind-table td.r { text-align:right; font-family:'Press Start 2P',cursive; font-size:4.5pt; color:#6ee7b7; white-space:nowrap; }
-    .ind-table tr.demais-row td { background:#3f1d1d; color:#fca5a5; font-style:italic; }
+    tr.demais-row td { background:#3f1d1d; color:#fca5a5; font-style:italic; }
     .pts-xp { font-size:6.5pt; color:var(--creme2); opacity:.65; }
 </style>
 </head>
@@ -337,7 +337,7 @@
 
         <div class="panel">
             <div class="panel-title"><span>💰 Bonificação / Prêmio</span></div>
-            <div class="panel-sub">R$ 500 × % da meta, rateado por XP entre operadores e mestre.</div>
+            <div class="panel-sub">R$ 500 × % da meta, dividido por 8 indicadores e rateado por trabalho. DEMAIS (vermelho) = o que o setor deixou de ganhar.</div>
             <div id="coord-premios"></div>
         </div>
 
@@ -376,7 +376,7 @@
 
         <div class="panel">
             <div class="panel-title"><span>📊 Ranking por Indicador</span></div>
-            <div class="panel-sub">Toque em um indicador. Bônus = fatia do prêmio; DEMAIS (fora do setor) não recebe.</div>
+            <div class="panel-sub">Toque em um indicador. DEMAIS (vermelho) = atividade e R$ perdidos para fora do setor.</div>
             <div id="coord-indicadores"></div>
         </div>
     </div>
@@ -780,7 +780,7 @@ function nivelInfo(xp){
 function rankingOrdenado(mesKey){
   const { totais } = computo(mesKey);
   const P = calcularPremios(mesKey);
-  return PARTICIPANTES.map(o=>({ op:o, R:totais[o.id], ni:nivelInfo(totais[o.id].total), premio:P.premio[o.id] }))
+  return RASTREADOS.map(o=>({ op:o, R:totais[o.id], ni:nivelInfo(totais[o.id].total), premio:P.premio[o.id] }))
                    .sort((a,b)=> (b.premio - a.premio) || (b.R.total - a.R.total));  // por R$; empate → por XP
 }
 
@@ -794,10 +794,39 @@ function avancoMes(mesKey){
   return { rows, somaAddr, ult };
 }
 
+// % do estoque TOTAL endereçado = ÚLTIMA informação preenchida na coluna D (progresso geral),
+// considerando registros até o mês selecionado. Se a coluna D está formatada como % no Sheets,
+// o gviz devolve fração (0,4088) → multiplica por 100; se vier número direto (40,88), usa como está.
+function progressoTotalPct(mesKey){
+  const rows = DADOS.avanco
+    .filter(r => r && r.data && (!mesKey || mesDe(r.data) <= mesKey))
+    .sort((a,b)=> a.data - b.data);
+  for(let i=rows.length-1; i>=0; i--){
+    let v = rows[i].total;               // coluna D
+    if(v && v>0){ if(v<=1) v*=100; return Math.min(100, v); }
+  }
+  return 0;
+}
+function fmtPct(v){ return v.toFixed(2).replace('.', ',') + '%'; }
+
+// ---------- indicadores (usados no prêmio e no ranking por indicador) ----------
+const INDICADORES = [
+  { nome:'Pedidos aprovados',  q:R=>R.b.qtdPedidos, xp:R=>R.xpPedidos },
+  { nome:'Produtos separados', q:R=>R.b.separados,  xp:R=>R.xpSeparados },
+  { nome:'OPs finalizadas',    q:R=>R.b.ops,        xp:R=>R.xpOps },
+  { nome:'Produtos ajustados', q:R=>R.b.ajustes,    xp:R=>R.xpAjustes },
+  { nome:'NF Fatura',          q:R=>R.b.nfFatura,   xp:R=>R.xpNf },
+  { nome:'Conh. de Frete',     q:R=>R.b.conhecFrete,xp:R=>R.xpCt },
+  { nome:'Produtos conferidos',q:R=>R.b.conferidos, xp:R=>R.xpConf },
+  { nome:'Material recebido',  q:R=>R.b.recebidos,  xp:R=>R.xpReceb },
+];
+
 // ---------- bonificação / prêmio em R$ ----------
 // Pool do mês = R$ 500 × (% da meta atingida, SEM teto: 160% da meta => R$ 800).
-// Esse valor é rateado entre TODOS os participantes (4 operadores + mestre),
-// proporcional ao XP líquido de cada um no mês (piso em 0 para quem ficou negativo).
+// O pool é DIVIDIDO por 8 (número fixo de indicadores) — cada indicador vale uma fatia igual.
+// Dentro de cada indicador, a fatia é rateada pelo trabalho (XP) de cada um, INCLUINDO o DEMAIS
+// (parte perdida). Indicador SEM atividade no mês não distribui sua fatia (também perdida). O
+// prêmio de cada pessoa é a soma das fatias que ela ganhou em todos os indicadores.
 const PREMIO_BASE = 500;
 function calcularPremios(mesKey){
   const { totais } = computo(mesKey);
@@ -805,16 +834,26 @@ function calcularPremios(mesKey){
   const meta = META_MENSAL[mesKey] || 0;
   const metaFrac = meta>0 ? (av.somaAddr/meta) : 0;   // sem teto
   const pool = PREMIO_BASE * metaFrac;
-  let somaPeso = 0; const peso = {};
-  PARTICIPANTES.forEach(o=>{ const w=Math.max(0, totais[o.id].total); peso[o.id]=w; somaPeso+=w; });
-  const premio = {};
-  PARTICIPANTES.forEach(o=>{ premio[o.id] = somaPeso>0 ? pool*(peso[o.id]/somaPeso) : 0; });
-  return { meta, metaFrac, pool, premio, somaAddr:av.somaAddr };
-}
-// Quanto do prêmio total de um participante veio de UM indicador específico.
-// (a soma dos 8 indicadores = prêmio total do participante)
-function premioDoIndicador(R, premioTotal, xpDoIndicador){
-  return R.recompensaXP>0 ? premioTotal*(xpDoIndicador/R.recompensaXP) : 0;
+
+  // XP total de cada indicador somando todos os rastreados (piso 0).
+  const somaXP = INDICADORES.map(ind => RASTREADOS.reduce((s,o)=> s + Math.max(0, ind.xp(totais[o.id])), 0));
+  const indAtivos = somaXP.filter(s=> s>0).length;          // indicadores com atividade (informativo)
+  const poolPorInd = pool / INDICADORES.length;             // fatia FIXA por indicador (÷ 8);
+                                                            // indicador sem atividade não distribui (fatia perdida)
+  const premio = {}, premioPorInd = {};
+  RASTREADOS.forEach(o=>{ premio[o.id]=0; premioPorInd[o.id]={}; });
+  INDICADORES.forEach((ind,i)=>{
+    const tot = somaXP[i];
+    RASTREADOS.forEach(o=>{
+      const xp = Math.max(0, ind.xp(totais[o.id]));
+      const parte = tot>0 ? poolPorInd*(xp/tot) : 0;        // fatia daquele indicador p/ essa pessoa
+      premioPorInd[o.id][ind.nome] = parte;
+      premio[o.id] += parte;
+    });
+  });
+  const distribuido = RASTREADOS.reduce((s,o)=> s + premio[o.id], 0);
+  const perdidoInd  = pool - distribuido;   // fatias de indicadores SEM atividade (não distribuídas)
+  return { meta, metaFrac, pool, poolPorInd, indAtivos, indTotais:INDICADORES.length, distribuido, perdidoInd, premio, premioPorInd, somaAddr:av.somaAddr };
 }
 
 // ---------- avatares pixel ----------
@@ -979,22 +1018,24 @@ function renderCoordenador(){
   const projEl = document.getElementById('coord-projetos');
   let projetos = [];
   if(av.ult){
-    const done = (av.ult.total>0? av.ult.total : av.ult.a00+av.ult.a01+av.ult.a02);
-    const tot = done + av.ult.nd;
-    projetos.push({ nome:'Endereçamento de Estoque (100%)', progresso: tot>0? Math.round((done/tot)*100):0 });
+    const pctTotal = progressoTotalPct(mes);   // coluna D (progresso geral do estoque)
+    projetos.push({ nome:'Endereçamento de Estoque (100%)', progresso: pctTotal, label: fmtPct(pctTotal) });
   }
   projetos = projetos.concat(PROJETOS_EXTRA);
   projEl.innerHTML = projetos.length ? projetos.map(p=>`
-    <div class="projeto"><div class="p-h"><span>${p.nome}</span><b>${p.progresso}%</b></div>
+    <div class="projeto"><div class="p-h"><span>${p.nome}</span><b>${p.label || (p.progresso+'%')}</b></div>
     <div class="bar-bg"><div class="bar-fill roxo" style="width:${Math.min(100,p.progresso)}%"></div></div></div>`).join('')
     : `<div class="tiny">Nenhum projeto cadastrado.</div>`;
 
   // Hall da Fama
   const rk = rankingOrdenado(mes);
+  const liderIdx = rk.findIndex(e=> !e.op.isDemais && e.R.total>0);  // 1º do setor (coroa/Guardião)
   const tb = document.querySelector('#coord-hall tbody'); tb.innerHTML='';
   rk.forEach((e,i)=>{
-    const tr=document.createElement('tr'); if(i===0 && e.R.total>0) tr.className='lider-row';
-    const coroa = (i===0 && e.R.total>0)?'👑 ':'';
+    const tr=document.createElement('tr');
+    if(e.op.isDemais) tr.className='demais-row';
+    else if(i===liderIdx) tr.className='lider-row';
+    const coroa = (i===liderIdx)?'👑 ':'';
     const bg = e.R.ehGuardiao?'<span class="guardiao-badge">GUARDIÃO</span>':'';
     tr.innerHTML = `<td>${coroa}${e.op.nome.split(' ')[0]} ${bg}</td>
       <td><span class="classe-tag cl-${e.ni.classe}">${e.ni.emoji} ${e.ni.classe}</span></td>
@@ -1029,28 +1070,21 @@ function renderPremios(mesKey){
     topo = `<div class="premio-tot"><div class="v">R$ 0,00</div>
       <div class="l">Defina a meta do mês em <span class="xp-chip">META_MENSAL</span> para liberar o prêmio.</div></div>`;
   } else {
+    const naoDist = P.perdidoInd > 0.005
+      ? `<div class="l" style="color:#fca5a5;margin-top:6px">Não distribuído: <b>${fmtMoeda(P.perdidoInd)}</b> · ${P.indAtivos}/${P.indTotais} indicadores com atividade (fatia vazia é perdida)</div>`
+      : '';
     topo = `<div class="premio-tot"><div class="v">${fmtMoeda(P.pool)}</div>
-      <div class="l">Prêmio do mês · ${fmt(P.somaAddr)} / ${fmt(P.meta)} endereçados (<b style="color:var(--ouro)">${pctMeta}%</b> da meta)</div></div>`;
+      <div class="l">Prêmio do mês · ${fmt(P.somaAddr)} / ${fmt(P.meta)} endereçados (<b style="color:var(--ouro)">${pctMeta}%</b> da meta)</div>${naoDist}</div>`;
   }
-  const linhas = PARTICIPANTES
+  const linhas = RASTREADOS
     .map(o=>({ o, R:totais[o.id], v:P.premio[o.id] }))
     .sort((a,b)=> b.v - a.v)
-    .map(x=>`<tr><td>${x.o.nome.split(' ')[0]}</td>
+    .map(x=>`<tr class="${x.o.isDemais?'demais-row':''}"><td>${x.o.nome.split(' ')[0]}</td>
         <td class="q">${fmt(x.R.total)} XP</td><td class="r">${fmtMoeda(x.v)}</td></tr>`).join('');
   el.innerHTML = topo + `<table class="premio-table"><tbody>${linhas}</tbody></table>`;
 }
 
 // ---------- ranking por indicador (coordenador) ----------
-const INDICADORES = [
-  { nome:'Pedidos aprovados',  q:R=>R.b.qtdPedidos, xp:R=>R.xpPedidos },
-  { nome:'Produtos separados', q:R=>R.b.separados,  xp:R=>R.xpSeparados },
-  { nome:'OPs finalizadas',    q:R=>R.b.ops,        xp:R=>R.xpOps },
-  { nome:'Produtos ajustados', q:R=>R.b.ajustes,    xp:R=>R.xpAjustes },
-  { nome:'NF Fatura',          q:R=>R.b.nfFatura,   xp:R=>R.xpNf },
-  { nome:'Conh. de Frete',     q:R=>R.b.conhecFrete,xp:R=>R.xpCt },
-  { nome:'Produtos conferidos',q:R=>R.b.conferidos, xp:R=>R.xpConf },
-  { nome:'Material recebido',  q:R=>R.b.recebidos,  xp:R=>R.xpReceb },
-];
 function renderIndicadores(mesKey){
   const el = document.getElementById('coord-indicadores'); if(!el) return;
   const { totais } = computo(mesKey);
@@ -1058,13 +1092,13 @@ function renderIndicadores(mesKey){
   el.innerHTML = INDICADORES.map(ind=>{
     const rows = RASTREADOS.map(o=>{
       const R=totais[o.id];
-      // DEMAIS (gente de fora) não recebe prêmio: mostra a atividade, mas R$ = "—".
-      const rs = o.isDemais ? null : premioDoIndicador(R, P.premio[o.id]||0, ind.xp(R));
+      // R$ que cada um ganhou NAQUELE indicador (DEMAIS mostra o que "levou" = perdido p/ o setor).
+      const rs = (P.premioPorInd[o.id] && P.premioPorInd[o.id][ind.nome]) || 0;
       return { o, qtd:ind.q(R), xp:ind.xp(R), rs };
     }).sort((a,b)=> b.qtd - a.qtd);
     const totQ = rows.reduce((s,r)=>s+r.qtd,0);
     const body = rows.map(r=>`<tr class="${r.o.isDemais?'demais-row':''}"><td>${r.o.nome.split(' ')[0]}</td>
-        <td class="n">${fmt(r.qtd)}</td><td class="x">${fmt(r.xp)}</td><td class="r">${r.rs==null?'—':fmtMoeda(r.rs)}</td></tr>`).join('');
+        <td class="n">${fmt(r.qtd)}</td><td class="x">${fmt(r.xp)}</td><td class="r">${fmtMoeda(r.rs)}</td></tr>`).join('');
     return `<details class="op-card"><summary>
         <span class="op-nm">${ind.nome}</span>
         <span class="op-pt">${fmt(totQ)}</span><span class="chev">▶</span></summary>
@@ -1165,13 +1199,13 @@ function renderProjetoOperador(mes){
   const el = document.getElementById('op-projeto'); if(!el) return;
   const av = avancoMes(mes);
   const meta = META_MENSAL[mes] || 0;
-  // % total já endereçada (último registro do avanço)
+  // % total já endereçada = coluna D (progresso geral); contagem de peças vem das colunas B e H.
   let pctTotal = 0, txtTotal = 'Sem registro de avanço ainda.';
   if(av.ult){
-    const base = (av.ult.total>0? av.ult.total : av.ult.a00+av.ult.a01+av.ult.a02);
-    const geral = base + av.ult.nd;
-    pctTotal = geral>0? Math.round((base/geral)*100) : 0;
-    txtTotal = `${fmt(base)} de ${fmt(geral)} produtos · faltam ${fmt(av.ult.nd)} (N/D)`;
+    pctTotal = progressoTotalPct(mes);
+    const addr = av.ult.addr>0 ? av.ult.addr : av.ult.a00+av.ult.a01+av.ult.a02;
+    const geral = addr + av.ult.nd;
+    txtTotal = geral>0 ? `${fmt(addr)} de ${fmt(geral)} produtos · faltam ${fmt(av.ult.nd)} (N/D)` : 'Progresso geral do estoque.';
   }
   // avanço do mês (endereçados no mês × meta)
   let mesLinha;
@@ -1184,8 +1218,8 @@ function renderProjetoOperador(mes){
     mesLinha = `<div class="meta-line" style="margin-top:12px"><span>Endereçados no mês</span><b>${fmt(av.somaAddr)}</b></div>
       <div class="tiny">Meta do mês ainda não definida.</div>`;
   }
-  el.innerHTML = `<div class="meta-line"><span>Estoque endereçado (total)</span><b>${pctTotal}%</b></div>
-    <div class="bar-bg"><div class="bar-fill" style="width:${pctTotal}%"></div></div>
+  el.innerHTML = `<div class="meta-line"><span>Estoque endereçado (total)</span><b>${fmtPct(pctTotal)}</b></div>
+    <div class="bar-bg"><div class="bar-fill" style="width:${Math.min(100,pctTotal)}%"></div></div>
     <div class="tiny" style="margin-top:6px">${txtTotal}</div>` + mesLinha;
 }
 
