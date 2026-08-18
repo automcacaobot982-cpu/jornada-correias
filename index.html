@@ -976,9 +976,9 @@ function renderCoordenador(){
       <div class="tiny">Meta do mês ainda não definida (preencha <span class="xp-chip">META_MENSAL</span> na configuração).</div>`;
   }
 
-  // Macro (totais da equipe)
+  // Macro (totais gerais: operadores + mestre + DEMAIS)
   let tPed=0,vPed=0,tSep=0,tOps=0,tAju=0,tNf=0,tCt=0,tConf=0,tReceb=0;
-  PARTICIPANTES.forEach(o=>{ const b=totais[o.id].b;
+  RASTREADOS.forEach(o=>{ const b=totais[o.id].b;
     tPed+=b.qtdPedidos; vPed+=b.valorPedidos; tSep+=b.separados; tOps+=b.ops; tAju+=b.ajustes;
     tNf+=b.nfFatura; tCt+=b.conhecFrete; tConf+=b.conferidos; tReceb+=b.recebidos; });
   document.getElementById('coord-macro').innerHTML = `
