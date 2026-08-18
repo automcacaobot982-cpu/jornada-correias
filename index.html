@@ -468,6 +468,7 @@ const SHEETS = {
   documentos:  { id:'1yNdm3Qfotd7x0OK5HV0Ptb6fZ7V38sTkoEOOgM0swOU', gid:'0' }, // Documentos finalizados
   conferidos:  { id:'1-tZet39ZmrbIT_-OUMviO6vXiR_mGDoCT_l27-5D1_o', gid:'0' }, // Produtos conferidos
   recebimento: { id:'1yrHSdT_kKfRrBETqfgotS6db_rJOo2BUCkALhfvAOgs', gid:'0' }, // Registro de recebimento
+  meta:        { id:'1ursv7pK7JFy344PZe3JcM7yz7eKX3GQJkZunSj4Ll38', gid:'0' }, // Meta mensal (A=período, B=quantidade)
 };
 
 // 2) COORDENADOR (Mestre) — TROQUE A SENHA
@@ -504,10 +505,16 @@ const PEN = { atraso:500, falta:5000, rnc:1000, erroDoc:100 };
 // 4b) XP necessário para subir 1 nível (a cada 500 XP acumulados, sobe 1 nível).
 const XP_POR_NIVEL = 500;
 
-// 5) META MENSAL de endereçamento (definida pelo Mestre). Chave = 'AAAA-MM'.
+// 5) META MENSAL de endereçamento. Fonte principal: planilha "Meta mensal" (SHEETS.meta).
+//    O objeto abaixo é só uma RESERVA caso a planilha esteja indisponível. Chave = 'AAAA-MM'.
 const META_MENSAL = {
   // '2026-08': 300,
 };
+// Meta do mês: usa a planilha se houver valor; senão, cai para o META_MENSAL do código.
+function metaDoMes(mesKey){
+  if(DADOS && DADOS.metaMes && DADOS.metaMes[mesKey] > 0) return DADOS.metaMes[mesKey];
+  return META_MENSAL[mesKey] || 0;
+}
 
 // 6) AJUSTES MANUAIS por mês e operador (o que NÃO vem de planilha):
 //    faltas, atrasos, rnc, errosDoc (NF/CT lançada errada), missoesDiarias, bonusExtra (XP avulso).
@@ -605,6 +612,20 @@ function parseData(c){
 }
 function mesDe(d){ return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`; }
 function mesAnterior(k){ let [y,m]=k.split('-').map(Number); m--; if(m<1){m=12;y--;} return `${y}-${String(m).padStart(2,'0')}`; }
+// Período da planilha de meta -> 'AAAA-MM'. Aceita data, "AAAA-MM", "MM/AAAA" ou "mês/ano" por extenso.
+function parsePeriodo(c){
+  const s = normNome(celStr(c));
+  // 1) formatos de texto explícitos primeiro (senão o new Date() do JS "chuta" janeiro)
+  let m = s.match(/^(\d{4})[-/.](\d{1,2})$/); if(m) return m[1]+'-'+String(+m[2]).padStart(2,'0');
+  m = s.match(/^(\d{1,2})[-/.](\d{4})$/);     if(m) return m[2]+'-'+String(+m[1]).padStart(2,'0');
+  const MES={JANEIRO:1,FEVEREIRO:2,MARCO:3,ABRIL:4,MAIO:5,JUNHO:6,JULHO:7,AGOSTO:8,SETEMBRO:9,OUTUBRO:10,NOVEMBRO:11,DEZEMBRO:12,
+             JAN:1,FEV:2,MAR:3,ABR:4,MAI:5,JUN:6,JUL:7,AGO:8,SET:9,OUT:10,NOV:11,DEZ:12};
+  m = s.match(/([A-Z]{3,}).*?(\d{4})/); if(m && MES[m[1]]) return m[2]+'-'+String(MES[m[1]]).padStart(2,'0');
+  m = s.match(/(\d{4}).*?([A-Z]{3,})/); if(m && MES[m[2]]) return m[1]+'-'+String(MES[m[2]]).padStart(2,'0');
+  // 2) por fim, tenta como data real (objeto Date do gviz, dd/mm/aaaa, etc.)
+  const dt = parseData(c); if(dt) return mesDe(dt);
+  return null;
+}
 // Existe algum lançamento nesse mês? Serve de "piso" para a recursão do Guardião (mês sem dados = sem campeão).
 function mesTemDados(mesKey){
   if(!DADOS) return false;
@@ -690,7 +711,7 @@ function carregarSnapshot(){
 }
 
 function preprocessar(b){
-  const D = { pedidos:[], separados:[], ops:[], alteracoes:[], documentos:[], conferidos:[], recebimento:[], avanco:[] };
+  const D = { pedidos:[], separados:[], ops:[], alteracoes:[], documentos:[], conferidos:[], recebimento:[], avanco:[], metaMes:{} };
   (b.pedidos||[]).forEach(c=>{ const data=parseData(c[2]); if(!data) return; D.pedidos.push({ data, op:resolveOp(celStr(c[1])), valor:parseNum(c[4]) }); });
   (b.separados||[]).forEach(c=>{ const data=parseData(c[2]); if(!data) return; D.separados.push({ data, op:resolveOp(celStr(c[1])), area:celStr(c[4]).toUpperCase() }); });
   (b.ops||[]).forEach(c=>{ const data=parseData(c[2])||parseData(c[1]); if(!data) return; D.ops.push({ data, op:resolveOp(celStr(c[0])), area:celStr(c[7]).toUpperCase() }); });
@@ -699,6 +720,7 @@ function preprocessar(b){
   (b.conferidos||[]).forEach(c=>{ const data=parseData(c[3]); if(!data) return; D.conferidos.push({ data, op:resolveOp(celStr(c[4])) }); });
   (b.recebimento||[]).forEach(c=>{ const data=parseData(c[1]); if(!data) return; D.recebimento.push({ data, op:resolveOp(celStr(c[2])), valor:parseNum(c[7]) }); });
   (b.avanco||[]).forEach(c=>{ const data=parseData(c[0]); if(!data) return; D.avanco.push({ data, addr:parseNum(c[1]), varia:parseNum(c[2]), total:parseNum(c[3]), a00:parseNum(c[4]), a01:parseNum(c[5]), a02:parseNum(c[6]), nd:parseNum(c[7]) }); });
+  (b.meta||[]).forEach(c=>{ const mk=parsePeriodo(c[0]); if(!mk) return; const q=parseNum(c[1]); if(q>0) D.metaMes[mk]=q; });
   return D;
 }
 
@@ -831,7 +853,7 @@ const PREMIO_BASE = 500;
 function calcularPremios(mesKey){
   const { totais } = computo(mesKey);
   const av   = avancoMes(mesKey);
-  const meta = META_MENSAL[mesKey] || 0;
+  const meta = metaDoMes(mesKey);
   const metaFrac = meta>0 ? (av.somaAddr/meta) : 0;   // sem teto
   const pool = PREMIO_BASE * metaFrac;
 
@@ -964,7 +986,7 @@ function renderCoordenador(){
 
   // Meta
   const av = avancoMes(mes);
-  const meta = META_MENSAL[mes];
+  const meta = metaDoMes(mes);
   const metaDiv = document.getElementById('coord-meta');
   if(meta){
     const pc = Math.min(100, Math.round((av.somaAddr/meta)*100));
@@ -973,7 +995,7 @@ function renderCoordenador(){
       <div class="tiny" style="margin-top:6px">${pc}% da meta do mês.</div>`;
   } else {
     metaDiv.innerHTML = `<div class="meta-line"><span>Endereçados no mês</span><b>${fmt(av.somaAddr)}</b></div>
-      <div class="tiny">Meta do mês ainda não definida (preencha <span class="xp-chip">META_MENSAL</span> na configuração).</div>`;
+      <div class="tiny">Meta do mês ainda não definida (preencha na planilha de Meta mensal).</div>`;
   }
 
   // Macro (totais gerais: operadores + mestre + DEMAIS)
@@ -1068,7 +1090,7 @@ function renderPremios(mesKey){
   let topo;
   if(!P.meta){
     topo = `<div class="premio-tot"><div class="v">R$ 0,00</div>
-      <div class="l">Defina a meta do mês em <span class="xp-chip">META_MENSAL</span> para liberar o prêmio.</div></div>`;
+      <div class="l">Defina a meta do mês na planilha de Meta mensal para liberar o prêmio.</div></div>`;
   } else {
     const naoDist = P.perdidoInd > 0.005
       ? `<div class="l" style="color:#fca5a5;margin-top:6px">Não distribuído: <b>${fmtMoeda(P.perdidoInd)}</b> · ${P.indAtivos}/${P.indTotais} indicadores com atividade (fatia vazia é perdida)</div>`
@@ -1198,7 +1220,7 @@ function renderOperador(){
 function renderProjetoOperador(mes){
   const el = document.getElementById('op-projeto'); if(!el) return;
   const av = avancoMes(mes);
-  const meta = META_MENSAL[mes] || 0;
+  const meta = metaDoMes(mes);
   // % total já endereçada = coluna D (progresso geral); contagem de peças vem das colunas B e H.
   let pctTotal = 0, txtTotal = 'Sem registro de avanço ainda.';
   if(av.ult){
