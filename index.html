@@ -150,10 +150,12 @@
 
     /* ---------- HALL DA FAMA ---------- */
     .leaderboard { width:100%; border-collapse:collapse; }
-    .leaderboard th { font-family:'Press Start 2P',cursive; font-size:4.5pt; background:#2e1065; color:var(--creme); padding:8px 5px; text-align:left; border:1px solid #4c1d95; }
-    .leaderboard td { font-size:8.5pt; padding:8px 5px; border:1px solid var(--borda2); background:#1e1b4b; vertical-align:middle; }
+    .leaderboard th { font-family:'Press Start 2P',cursive; font-size:4pt; background:#2e1065; color:var(--creme); padding:7px 3px; text-align:left; border:1px solid #4c1d95; }
+    .leaderboard td { font-size:8.5pt; padding:7px 3px; border:1px solid var(--borda2); background:#1e1b4b; vertical-align:middle; }
     .lider-row td { background:#3b284c; font-weight:bold; color:var(--ouro); }
-    .pts-cell { font-family:'Press Start 2P',cursive; font-size:5pt; }
+    .pts-cell { font-family:'Press Start 2P',cursive; font-size:5pt; color:#6ee7b7; white-space:nowrap; }
+    .lb-nv { white-space:nowrap; color:var(--roxo2); font-size:8pt; }
+    .lb-xp { font-family:'Press Start 2P',cursive; font-size:5pt; color:var(--ouro); white-space:nowrap; }
     .lendario-badge { font-family:'Press Start 2P',cursive; font-size:3.6pt; background:#b91c1c; color:var(--creme2); padding:2px 3px; border-radius:3px; border:1px solid #f87171; margin-left:3px; white-space:nowrap; }
     .guardiao-badge { font-family:'Press Start 2P',cursive; font-size:3.6pt; background:#065f46; color:#d1fae5; padding:2px 3px; border-radius:3px; border:1px solid #34d399; margin-left:3px; white-space:nowrap; }
 
@@ -363,7 +365,7 @@
         <div class="panel">
             <div class="panel-title"><span>🏆 Hall da Fama</span></div>
             <table class="leaderboard" id="coord-hall">
-                <thead><tr><th>HERÓI</th><th>CLASSE</th><th>NÍVEL</th><th>PRÊMIO</th></tr></thead>
+                <thead><tr><th>HERÓI</th><th>NÍVEL</th><th>CLASSE</th><th>XP</th><th>PRÊMIO</th></tr></thead>
                 <tbody></tbody>
             </table>
         </div>
@@ -502,8 +504,8 @@ const RASTREADOS = [...PARTICIPANTES, DEMAIS];
 const XP  = { pedido:10, separado:10, op:10, ajuste:1, nf:10, ct:10, conferido:10, recebido:10, missaoDiaria:100 };
 const PEN = { atraso:500, falta:5000, rnc:1000, erroDoc:100 };
 
-// 4b) XP necessário para subir 1 nível (a cada 500 XP acumulados, sobe 1 nível).
-const XP_POR_NIVEL = 500;
+// 4b) XP necessário para subir 1 nível (a cada 100 XP acumulados, sobe 1 nível).
+const XP_POR_NIVEL = 100;
 
 // 5) META MENSAL de endereçamento. Fonte principal: planilha "Meta mensal" (SHEETS.meta).
 //    O objeto abaixo é só uma RESERVA caso a planilha esteja indisponível. Chave = 'AAAA-MM'.
@@ -1060,9 +1062,10 @@ function renderCoordenador(){
     const coroa = (i===liderIdx)?'👑 ':'';
     const bg = e.R.ehGuardiao?'<span class="guardiao-badge">GUARDIÃO</span>':'';
     tr.innerHTML = `<td>${coroa}${e.op.nome.split(' ')[0]} ${bg}</td>
+      <td class="lb-nv">Nv ${e.ni.nivel}</td>
       <td><span class="classe-tag cl-${e.ni.classe}">${e.ni.emoji} ${e.ni.classe}</span></td>
-      <td>Nv ${e.ni.nivel}</td>
-      <td class="pts-cell">${fmtMoeda(e.premio)}<br><span class="pts-xp">${fmt(e.R.total)} XP</span></td>`;
+      <td class="lb-xp">${fmt(e.R.total)}</td>
+      <td class="pts-cell">${fmtMoeda(e.premio)}</td>`;
     tb.appendChild(tr);
   });
 
