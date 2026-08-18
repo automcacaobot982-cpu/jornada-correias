@@ -262,11 +262,12 @@
 
     /* tabela por indicador (coordenador) */
     .ind-table { width:100%; border-collapse:collapse; }
-    .ind-table th { font-family:'Press Start 2P',cursive; font-size:4pt; background:#2e1065; color:var(--creme); padding:7px 4px; text-align:left; border:1px solid #4c1d95; }
-    .ind-table td { font-size:8.5pt; padding:7px 4px; border:1px solid var(--borda2); background:#1e1b4b; }
-    .ind-table td.n { text-align:center; color:var(--roxo2); font-size:8pt; }
-    .ind-table td.x { text-align:center; font-family:'Press Start 2P',cursive; font-size:4.5pt; color:var(--ouro); }
-    .ind-table td.r { text-align:right; font-family:'Press Start 2P',cursive; font-size:4.5pt; color:#6ee7b7; white-space:nowrap; }
+    .ind-table th { font-family:'Press Start 2P',cursive; font-size:3.6pt; background:#2e1065; color:var(--creme); padding:6px 2px; text-align:left; border:1px solid #4c1d95; }
+    .ind-table td { font-size:8pt; padding:6px 2px; border:1px solid var(--borda2); background:#1e1b4b; }
+    .ind-table td.n { text-align:center; color:var(--roxo2); font-size:7.5pt; }
+    .ind-table td.x { text-align:center; font-family:'Press Start 2P',cursive; font-size:4.2pt; color:var(--ouro); }
+    .ind-table td.pu { text-align:center; font-family:'Press Start 2P',cursive; font-size:4.2pt; color:#a78bfa; white-space:nowrap; }
+    .ind-table td.r { text-align:right; font-family:'Press Start 2P',cursive; font-size:4.2pt; color:#6ee7b7; white-space:nowrap; }
     tr.demais-row td { background:#3f1d1d; color:#fca5a5; font-style:italic; }
     .pts-xp { font-size:6.5pt; color:var(--creme2); opacity:.65; }
 </style>
@@ -332,9 +333,8 @@
         <div id="coord-guardiao"></div>
 
         <div class="panel">
-            <div class="panel-title"><span>🎯 Missão Principal (Equipe)</span></div>
-            <div class="panel-sub">Endereçar 100% dos produtos do estoque. Meta mensal definida pelo Mestre.</div>
-            <div class="meta-wrap" id="coord-meta"></div>
+            <div class="panel-title"><span>🏗️ Informações do Projeto</span></div>
+            <div id="coord-projeto"></div>
         </div>
 
         <div class="panel">
@@ -355,11 +355,6 @@
             <div class="hr"></div>
             <div class="tiny" style="margin-bottom:4px;">Produtos endereçados por dia (mês):</div>
             <div id="coord-chart-avanco"></div>
-        </div>
-
-        <div class="panel">
-            <div class="panel-title"><span>🏗️ Desenvolvimento dos Projetos</span></div>
-            <div id="coord-projetos"></div>
         </div>
 
         <div class="panel">
@@ -781,7 +776,8 @@ function computeTotais(mesKey, guardiaoId){
 function campeaoDoMes(mesKey){
   if(!mesKey || !DADOS || !mesTemDados(mesKey)) return null;   // sem dados no mês → sem campeão (encerra a recursão)
   const { totais } = computo(mesKey);   // MESMO XP que o Hall exibe (já com o bônus de Guardião do mês)
-  // O prêmio (R$) é proporcional ao XP líquido positivo, então o líder de R$ = maior XP líquido.
+  // Campeão = MAIOR XP líquido (a Medalha de Guardião é por XP, não por R$).
+  // Obs.: com o rateio do prêmio por indicador, o 1º do Hall (por R$) PODE ser outra pessoa.
   let best=null, bestXP=-Infinity;
   PARTICIPANTES.forEach(o=>{ if(totais[o.id].total>bestXP){ bestXP=totais[o.id].total; best=o.id; } });
   return bestXP>0 ? best : null;   // só há destaque (e Guardião) com desempenho positivo
@@ -848,10 +844,12 @@ const INDICADORES = [
 // ---------- bonificação / prêmio em R$ ----------
 // Pool do mês = R$ 500 × (% da meta atingida, SEM teto: 160% da meta => R$ 800).
 // O pool é DIVIDIDO por 8 (número fixo de indicadores) — cada indicador vale uma fatia igual.
-// Dentro de cada indicador, a fatia é rateada pelo trabalho (XP) de cada um, INCLUINDO o DEMAIS
-// (parte perdida). Indicador SEM atividade no mês não distribui sua fatia (também perdida). O
-// prêmio de cada pessoa é a soma das fatias que ela ganhou em todos os indicadores.
+// Dentro de cada indicador, a fatia é rateada pelo XP de cada um NAQUELE indicador, JÁ COM o
+// bônus de medalha (Guardião do Estoque = +10%), incluindo o DEMAIS (parte perdida). Indicador
+// SEM atividade não distribui sua fatia (também perdida). O prêmio de cada pessoa é a soma das
+// fatias que ela ganhou em todos os indicadores.
 const PREMIO_BASE = 500;
+const BONUS_MEDALHA_GUARDIAO = 0.10;   // +10% de XP para o Guardião do Estoque
 function calcularPremios(mesKey){
   const { totais } = computo(mesKey);
   const av   = avancoMes(mesKey);
@@ -859,8 +857,10 @@ function calcularPremios(mesKey){
   const metaFrac = meta>0 ? (av.somaAddr/meta) : 0;   // sem teto
   const pool = PREMIO_BASE * metaFrac;
 
-  // XP total de cada indicador somando todos os rastreados (piso 0).
-  const somaXP = INDICADORES.map(ind => RASTREADOS.reduce((s,o)=> s + Math.max(0, ind.xp(totais[o.id])), 0));
+  // Fator de medalha por pessoa (Guardião = +10%); entra no XP usado no rateio de cada indicador.
+  const fator = {}; RASTREADOS.forEach(o=>{ fator[o.id] = totais[o.id].ehGuardiao ? (1+BONUS_MEDALHA_GUARDIAO) : 1; });
+  // XP de cada indicador (JÁ com o bônus de medalha) somando todos os rastreados.
+  const somaXP = INDICADORES.map(ind => RASTREADOS.reduce((s,o)=> s + Math.max(0, ind.xp(totais[o.id]))*fator[o.id], 0));
   const indAtivos = somaXP.filter(s=> s>0).length;          // indicadores com atividade (informativo)
   const poolPorInd = pool / INDICADORES.length;             // fatia FIXA por indicador (÷ 8);
                                                             // indicador sem atividade não distribui (fatia perdida)
@@ -869,7 +869,7 @@ function calcularPremios(mesKey){
   INDICADORES.forEach((ind,i)=>{
     const tot = somaXP[i];
     RASTREADOS.forEach(o=>{
-      const xp = Math.max(0, ind.xp(totais[o.id]));
+      const xp = Math.max(0, ind.xp(totais[o.id])) * fator[o.id];   // XP no indicador COM bônus de medalha
       const parte = tot>0 ? poolPorInd*(xp/tot) : 0;        // fatia daquele indicador p/ essa pessoa
       premioPorInd[o.id][ind.nome] = parte;
       premio[o.id] += parte;
@@ -988,17 +988,8 @@ function renderCoordenador(){
 
   // Meta
   const av = avancoMes(mes);
-  const meta = metaDoMes(mes);
-  const metaDiv = document.getElementById('coord-meta');
-  if(meta){
-    const pc = Math.min(100, Math.round((av.somaAddr/meta)*100));
-    metaDiv.innerHTML = `<div class="meta-line"><span>Endereçados no mês</span><b>${fmt(av.somaAddr)} / ${fmt(meta)}</b></div>
-      <div class="bar-bg"><div class="bar-fill" style="width:${pc}%"></div></div>
-      <div class="tiny" style="margin-top:6px">${pc}% da meta do mês.</div>`;
-  } else {
-    metaDiv.innerHTML = `<div class="meta-line"><span>Endereçados no mês</span><b>${fmt(av.somaAddr)}</b></div>
-      <div class="tiny">Meta do mês ainda não definida (preencha na planilha de Meta mensal).</div>`;
-  }
+  // Painel unificado "Informações do Projeto" (mesmo card do operador).
+  document.getElementById('coord-projeto').innerHTML = htmlInfoProjeto(mes);
 
   // Macro (totais gerais: operadores + mestre + DEMAIS)
   let tPed=0,vPed=0,tSep=0,tOps=0,tAju=0,tNf=0,tCt=0,tConf=0,tReceb=0;
@@ -1037,19 +1028,6 @@ function renderCoordenador(){
   }
   const itensAv = av.rows.map(r=>({ l:String(r.data.getDate()), v:r.varia }));
   document.getElementById('coord-chart-avanco').innerHTML = chartBarras(itensAv,'roxo');
-
-  // Projetos
-  const projEl = document.getElementById('coord-projetos');
-  let projetos = [];
-  if(av.ult){
-    const pctTotal = progressoTotalPct(mes);   // coluna D (progresso geral do estoque)
-    projetos.push({ nome:'Endereçamento de Estoque (100%)', progresso: pctTotal, label: fmtPct(pctTotal) });
-  }
-  projetos = projetos.concat(PROJETOS_EXTRA);
-  projEl.innerHTML = projetos.length ? projetos.map(p=>`
-    <div class="projeto"><div class="p-h"><span>${p.nome}</span><b>${p.label || (p.progresso+'%')}</b></div>
-    <div class="bar-bg"><div class="bar-fill roxo" style="width:${Math.min(100,p.progresso)}%"></div></div></div>`).join('')
-    : `<div class="tiny">Nenhum projeto cadastrado.</div>`;
 
   // Hall da Fama
   const rk = rankingOrdenado(mes);
@@ -1117,18 +1095,20 @@ function renderIndicadores(mesKey){
   el.innerHTML = INDICADORES.map(ind=>{
     const rows = RASTREADOS.map(o=>{
       const R=totais[o.id];
+      const xp = ind.xp(R);
+      const powerup = R.ehGuardiao ? xp*BONUS_MEDALHA_GUARDIAO : 0;   // bônus de XP da medalha (Guardião +10%)
       // R$ que cada um ganhou NAQUELE indicador (DEMAIS mostra o que "levou" = perdido p/ o setor).
       const rs = (P.premioPorInd[o.id] && P.premioPorInd[o.id][ind.nome]) || 0;
-      return { o, qtd:ind.q(R), xp:ind.xp(R), rs };
-    }).sort((a,b)=> b.qtd - a.qtd);
+      return { o, qtd:ind.q(R), xp, powerup, rs, ef: xp+powerup };
+    }).sort((a,b)=> b.ef - a.ef);   // do maior ao menor por XP (já com o powerup)
     const totQ = rows.reduce((s,r)=>s+r.qtd,0);
     const body = rows.map(r=>`<tr class="${r.o.isDemais?'demais-row':''}"><td>${r.o.nome.split(' ')[0]}</td>
-        <td class="n">${fmt(r.qtd)}</td><td class="x">${fmt(r.xp)}</td><td class="r">${fmtMoeda(r.rs)}</td></tr>`).join('');
+        <td class="n">${fmt(r.qtd)}</td><td class="x">${fmt(r.xp)}</td><td class="pu">${r.powerup>0?'+'+fmt(Math.round(r.powerup)):'—'}</td><td class="r">${fmtMoeda(r.rs)}</td></tr>`).join('');
     return `<details class="op-card"><summary>
         <span class="op-nm">${ind.nome}</span>
         <span class="op-pt">${fmt(totQ)}</span><span class="chev">▶</span></summary>
       <div class="op-body"><table class="ind-table">
-        <thead><tr><th>OPERADOR</th><th>QTD</th><th>XP</th><th>R$</th></tr></thead>
+        <thead><tr><th>OPERADOR</th><th>QTD</th><th>XP</th><th>POWERUP</th><th>R$</th></tr></thead>
         <tbody>${body}</tbody></table></div></details>`;
   }).join('');
 }
@@ -1220,8 +1200,8 @@ function renderOperador(){
 }
 
 // Card "Informações do Projeto" no painel do operador.
-function renderProjetoOperador(mes){
-  const el = document.getElementById('op-projeto'); if(!el) return;
+// Conteúdo da caixa "Informações do Projeto" (usada no painel do operador E do coordenador).
+function htmlInfoProjeto(mes){
   const av = avancoMes(mes);
   const meta = metaDoMes(mes);
   // % total já endereçada = coluna D (progresso geral); contagem de peças vem das colunas B e H.
@@ -1241,11 +1221,14 @@ function renderProjetoOperador(mes){
       <div class="tiny" style="margin-top:6px">${pcMes}% da meta do mês.</div>`;
   } else {
     mesLinha = `<div class="meta-line" style="margin-top:12px"><span>Endereçados no mês</span><b>${fmt(av.somaAddr)}</b></div>
-      <div class="tiny">Meta do mês ainda não definida.</div>`;
+      <div class="tiny">Meta do mês ainda não definida (preencha na planilha de Meta mensal).</div>`;
   }
-  el.innerHTML = `<div class="meta-line"><span>Estoque endereçado (total)</span><b>${fmtPct(pctTotal)}</b></div>
+  return `<div class="meta-line"><span>Estoque endereçado (total)</span><b>${fmtPct(pctTotal)}</b></div>
     <div class="bar-bg"><div class="bar-fill" style="width:${Math.min(100,pctTotal)}%"></div></div>
     <div class="tiny" style="margin-top:6px">${txtTotal}</div>` + mesLinha;
+}
+function renderProjetoOperador(mes){
+  const el = document.getElementById('op-projeto'); if(el) el.innerHTML = htmlInfoProjeto(mes);
 }
 
 function marcarMissao(chk){
