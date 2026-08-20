@@ -71,6 +71,12 @@
         font-family: 'Press Start 2P', cursive; font-size: 4.5pt; cursor: pointer;
     }
 
+    .btn-rnc {
+        position: absolute; top: 12px; left: 12px; background: var(--ouro2);
+        border: 1px solid var(--ouro); color: #fff; padding: 5px 8px; border-radius: 4px;
+        font-family: 'Press Start 2P', cursive; font-size: 4.5pt; cursor: pointer;
+    }
+
     /* ---------- PAINEL GENÉRICO ---------- */
     .panel {
         background: var(--painel); border: 2px solid var(--borda); border-radius: 6px;
@@ -314,6 +320,7 @@
     <!-- ========================================================= -->
     <div id="tela-coordenador" class="view-section">
         <div class="header">
+            <button class="btn-rnc" onclick="location.href='formulario_rnc.html'">📜 RNC</button>
             <button class="btn-logout" onclick="fazerLogout()">SAIR ❌</button>
             <h1>👁️ O Grande Salão</h1>
             <div class="subtitle">[ VISÃO DO MESTRE COORDENADOR ]</div>
@@ -383,6 +390,7 @@
     <!-- ========================================================= -->
     <div id="tela-operador" class="view-section">
         <div class="header">
+            <button class="btn-rnc" onclick="location.href='formulario_rnc.html'">📜 RNC</button>
             <button class="btn-logout" onclick="fazerLogout()">SAIR ❌</button>
             <h1>🛡️ Salão do Herói</h1>
             <div class="subtitle">[ SEU DESEMPENHO NA JORNADA ]</div>
@@ -497,7 +505,7 @@ const RASTREADOS = [...PARTICIPANTES, DEMAIS];
 
 // 4) TABELA DE XP (recompensas e penalidades). Produto ajustado vale 1 XP; as demais tarefas, 10 XP.
 const XP  = { pedido:10, separado:10, op:10, ajuste:1, nf:10, ct:10, conferido:10, recebido:10, missaoDiaria:100 };
-const PEN = { atraso:500, falta:5000, rnc:1000, erroDoc:100 };
+const PEN = { atraso:500, falta:5000, rnc:1000 };
 
 // 4b) XP necessário para subir 1 nível (a cada 100 XP acumulados, sobe 1 nível).
 const XP_POR_NIVEL = 100;
@@ -514,13 +522,13 @@ function metaDoMes(mesKey){
 }
 
 // 6) AJUSTES MANUAIS por mês e operador (o que NÃO vem de planilha):
-//    faltas, atrasos, rnc, errosDoc (NF/CT lançada errada), missoesDiarias, bonusExtra (XP avulso).
+//    faltas, atrasos, rnc, missoesDiarias, bonusExtra (XP avulso).
 //    Só preencha o que houver; o resto conta como zero. Ex.:
 const AJUSTES_MANUAIS = {
   // '2026-08': {
   //   ARTHUR:   { missoesDiarias:5, atrasos:1 },
   //   LUAN:     { faltas:1, rnc:1 },
-  //   GABRIEL:  { errosDoc:2, bonusExtra:150 },
+  //   GABRIEL:  { bonusExtra:150 },
   // },
 };
 
@@ -759,10 +767,10 @@ function computeTotais(mesKey, guardiaoId){
     R.xpReceb     = b.recebidos*XP.recebido;
     R.recompensaXP = R.xpPedidos+R.xpSeparados+R.xpOps+R.xpAjustes+R.xpNf+R.xpCt+R.xpConf+R.xpReceb;
     const aj = (AJUSTES_MANUAIS[mesKey] && AJUSTES_MANUAIS[mesKey][o.id]) || {};
-    R.aj = { atrasos:aj.atrasos||0, faltas:aj.faltas||0, rnc:aj.rnc||0, errosDoc:aj.errosDoc||0, missoesDiarias:aj.missoesDiarias||0, bonusExtra:aj.bonusExtra||0 };
+    R.aj = { atrasos:aj.atrasos||0, faltas:aj.faltas||0, rnc:aj.rnc||0, missoesDiarias:aj.missoesDiarias||0, bonusExtra:aj.bonusExtra||0 };
     R.missaoXP = R.aj.missoesDiarias*XP.missaoDiaria;
     R.bonusXP  = R.aj.bonusExtra;
-    R.penalXP  = R.aj.atrasos*PEN.atraso + R.aj.faltas*PEN.falta + R.aj.rnc*PEN.rnc + R.aj.errosDoc*PEN.erroDoc;
+    R.penalXP  = R.aj.atrasos*PEN.atraso + R.aj.faltas*PEN.falta + R.aj.rnc*PEN.rnc;
     let positivo = R.recompensaXP + R.missaoXP + R.bonusXP;
     R.ehGuardiao = (o.id===guardiaoId);
     R.bonusGuardiao = R.ehGuardiao ? Math.round(positivo*0.10) : 0;
@@ -1133,7 +1141,6 @@ function tabelaExtrato(R){
   if(R.aj.atrasos)  html += linha('Atrasos', R.aj.atrasos+'×', -(R.aj.atrasos*PEN.atraso), 'neg');
   if(R.aj.faltas)   html += linha('Faltas', R.aj.faltas+'×', -(R.aj.faltas*PEN.falta), 'neg');
   if(R.aj.rnc)      html += linha('RNC', R.aj.rnc+'×', -(R.aj.rnc*PEN.rnc), 'neg');
-  if(R.aj.errosDoc) html += linha('NF/CT lançada errada', R.aj.errosDoc+'×', -(R.aj.errosDoc*PEN.erroDoc), 'neg');
   html += linha('TOTAL DO MÊS', '', R.total, 'tot');
   html += `</tbody></table>`;
   return html;
