@@ -4,6 +4,10 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <meta name="theme-color" content="#120c1f">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Jornada das Correias">
 <title>Jornada das Correias — Registro de RNC</title>
 <style>
     @import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&family=MedievalSharp&family=Cinzel:wght@600;800&display=swap');
@@ -25,9 +29,6 @@
         padding-top: max(12px, env(safe-area-inset-top));
         background-image: radial-gradient(circle at 50% 15%, #2a1b40 0%, #120c1f 90%);
         min-height: 100vh;
-        display: flex;
-        justify-content: center;
-        align-items: center;
     }
 
     .main-wrapper { width: 100%; max-width: 480px; margin: 0 auto; }
@@ -157,6 +158,13 @@
 </div>
 
 <script>
+    // ====================== CONFIGURAÇÃO ======================
+    // Cole aqui a URL do "App da Web" do Apps Script (veja as instruções).
+    // Enquanto estiver vazio, o formulário NÃO grava na planilha (só mostra a
+    // mensagem e registra no console do navegador).
+    const WEBAPP_URL = '';
+    // ==========================================================
+
     // Máscara para Data: DD/MM/AAAA
     function mascaraData(input) {
         let v = input.value.replace(/\D/g, "");
@@ -192,24 +200,52 @@
         input.value = "R$ " + v;
     }
 
-    // Processamento do Formulário
-    function salvarRNC(e) {
+    // Processamento do Formulário — grava na planilha via Apps Script (App da Web)
+    async function salvarRNC(e) {
         e.preventDefault();
-        
-        const data = document.getElementById('dataRNC').value;
-        const resp = document.getElementById('responsavel').value;
-        const rnc = document.getElementById('numRNC').value;
-        const custo = document.getElementById('custoRNC').value;
 
-        console.log("RNC Registrada:", { data, responsavel: resp, numeroRNC: rnc, custo });
+        const dados = {
+            data:        document.getElementById('dataRNC').value,
+            responsavel: document.getElementById('responsavel').selectedOptions[0].text, // nome completo
+            numeroRNC:   document.getElementById('numRNC').value,
+            custo:       document.getElementById('custoRNC').value,
+        };
 
-        const msg = document.getElementById('msgSucesso');
-        msg.style.display = 'block';
+        const btn = e.target.querySelector('.btn-action');
+        const txtOrig = btn.textContent;
+        btn.textContent = 'GRAVANDO...'; btn.disabled = true;
 
-        setTimeout(() => {
-            msg.style.display = 'none';
+        try {
+            if (WEBAPP_URL) {
+                await fetch(WEBAPP_URL, {
+                    method: 'POST',
+                    mode: 'no-cors',                                 // Apps Script não devolve cabeçalho CORS
+                    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+                    body: JSON.stringify(dados),
+                });
+            } else {
+                console.log('RNC (WEBAPP_URL vazio — não gravado):', dados);
+            }
+            mostrarMsg(true);
             document.getElementById('rncForm').reset();
-        }, 3000);
+        } catch (err) {
+            console.error('Falha ao gravar RNC:', err);
+            mostrarMsg(false);
+        } finally {
+            btn.textContent = txtOrig; btn.disabled = false;
+        }
+    }
+
+    function mostrarMsg(ok) {
+        const msg = document.getElementById('msgSucesso');
+        msg.textContent = ok
+            ? '✅ REGISTRO DE RNC GRAVADO COM SUCESSO NOS PERGAMINHOS!'
+            : '❌ FALHA AO GRAVAR. VERIFIQUE A CONEXÃO E TENTE NOVAMENTE.';
+        msg.style.background  = ok ? '#065f46' : '#5f1a1a';
+        msg.style.borderColor = ok ? '#34d399' : '#f87171';
+        msg.style.color       = ok ? '#d1fae5' : '#fecaca';
+        msg.style.display = 'block';
+        setTimeout(() => { msg.style.display = 'none'; }, 4000);
     }
 </script>
 
