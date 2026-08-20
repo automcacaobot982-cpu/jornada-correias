@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#120c1f">
+<title>Jornada das Correias — Registro de RNC</title>
+<style>
+    @import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&family=MedievalSharp&family=Cinzel:wght@600;800&display=swap');
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --fundo:#120c1f; --painel:#181124; --painel2:#211735; --painel3:#100a19;
+      --borda:#5c4033; --borda2:#3b284c; --ouro:#ffd700; --ouro2:#b8860b; --ouro3:#8b6508;
+      --creme:#e2d1a6; --creme2:#f3e5ab; --laranja:#ffaa00; --roxo:#a855f7; --roxo2:#c084fc;
+      --verde:#22c55e; --vermelho:#ef4444;
+    }
+
+    body {
+        font-family: 'MedievalSharp', Georgia, serif;
+        background-color: var(--fundo);
+        color: var(--creme);
+        padding: 12px;
+        padding-top: max(12px, env(safe-area-inset-top));
+        background-image: radial-gradient(circle at 50% 15%, #2a1b40 0%, #120c1f 90%);
+        min-height: 100vh;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+    }
+
+    .main-wrapper { width: 100%; max-width: 480px; margin: 0 auto; }
+
+    /* ---------- CABEÇALHO ---------- */
+    .header {
+        text-align: center; border: 3px solid var(--ouro2); background: #1c132b;
+        padding: 14px 8px; margin-bottom: 12px; border-radius: 6px; position: relative;
+        box-shadow: 0 0 10px rgba(184,134,11,0.4);
+    }
+    .header h1 {
+        font-family: 'Cinzel', serif; font-size: 15pt; color: var(--creme2);
+        text-transform: uppercase; letter-spacing: 1px;
+        text-shadow: 2px 2px 0px #000, 0 0 8px #ffaa00; margin-bottom: 4px;
+    }
+    .header .subtitle { 
+        font-family: 'Press Start 2P', cursive; font-size: 5pt; color: var(--laranja); 
+        letter-spacing: .5px; line-height: 1.4; 
+    }
+
+    .btn-voltar {
+        position: absolute; top: 12px; left: 12px; background: var(--ouro2);
+        border: 1px solid var(--ouro); color: #fff; padding: 5px 8px; border-radius: 4px;
+        font-family: 'Press Start 2P', cursive; font-size: 4.5pt; cursor: pointer;
+    }
+
+    /* ---------- PAINEL FORMULÁRIO ---------- */
+    .panel {
+        background: var(--painel); border: 2px solid var(--borda); border-radius: 6px;
+        padding: 16px; margin-bottom: 12px; box-shadow: inset 0 0 8px #000;
+    }
+    .panel-title {
+        font-family: 'Cinzel', serif; font-size: 11pt; color: var(--ouro);
+        border-bottom: 2px solid var(--ouro3); padding-bottom: 6px; margin-bottom: 14px;
+        text-transform: uppercase; display: flex; align-items: center; justify-content: space-between;
+    }
+
+    .input-group { margin-bottom: 14px; }
+    .input-label { 
+        font-family: 'Press Start 2P', cursive; font-size: 5.5pt; color: var(--laranja); 
+        margin-bottom: 6px; display: block; 
+    }
+    
+    .pixel-input, .pixel-select {
+        width: 100%; background: #000; border: 2px solid var(--ouro3); border-radius: 4px; 
+        padding: 10px; color: var(--ouro); font-family: 'Courier New', monospace; 
+        font-size: 11pt; outline: none; box-shadow: inset 0 0 5px rgba(0,0,0,.8);
+        transition: border-color 0.2s, box-shadow 0.2s;
+    }
+    .pixel-input:focus, .pixel-select:focus { 
+        border-color: var(--ouro); box-shadow: 0 0 6px rgba(255,215,0,.4); 
+    }
+
+    .btn-action {
+        width: 100%; background: linear-gradient(180deg, var(--ouro2) 0%, var(--ouro3) 100%);
+        border: 2px solid var(--ouro); border-radius: 4px; padding: 12px; color: #fff;
+        font-family: 'Press Start 2P', cursive; font-size: 7pt; text-shadow: 1px 1px 0px #000; 
+        cursor: pointer; text-transform: uppercase; box-shadow: 0 4px 0 var(--borda2); 
+        transition: transform .1s, background .2s; margin-top: 8px;
+    }
+    .btn-action:active { transform: translateY(2px); box-shadow: 0 2px 0 var(--borda2); }
+
+    .msg-sucesso {
+        display: none; background: #065f46; border: 2px solid #34d399; color: #d1fae5;
+        font-family: 'Press Start 2P', cursive; font-size: 5.5pt; padding: 10px;
+        border-radius: 4px; text-align: center; margin-top: 12px; line-height: 1.5;
+    }
+
+    .footer-note { 
+        text-align: center; font-size: 6.5pt; color: #8b7d6b; margin-top: 10px; font-style: italic; 
+    }
+</style>
+</head>
+<body>
+
+<div class="main-wrapper">
+    <div class="header">
+        <button class="btn-voltar" onclick="location.href='index.html'">⬅️ VOLTAR</button>
+        <h1>📜 Registro de RNC 🛡️</h1>
+        <div class="subtitle">[ REGISTRO DE NÃO CONFORMIDADE DA GUILDA ]</div>
+    </div>
+
+    <div class="panel">
+        <div class="panel-title"><span>⚠️ Lançamento de Ocorrência</span></div>
+        
+        <form id="rncForm" onsubmit="salvarRNC(event)">
+            <!-- CAMPO DATA -->
+            <div class="input-group">
+                <label class="input-label" for="dataRNC">📅 DATA DA OCORRÊNCIA (DD/MM/AAAA):</label>
+                <input type="text" id="dataRNC" class="pixel-input" placeholder="00/00/0000" maxlength="10" required oninput="mascaraData(this)">
+            </div>
+
+            <!-- CAMPO RESPONSÁVEL -->
+            <div class="input-group">
+                <label class="input-label" for="responsavel">👤 RESPONSÁVEL:</label>
+                <select id="responsavel" class="pixel-select" required>
+                    <option value="" disabled selected>SELECIONE O HERÓI...</option>
+                    <option value="ARTHUR">ARTHUR PEREIRA WEBER</option>
+                    <option value="GABRIEL">GABRIEL GONCALVES PERES</option>
+                    <option value="LUAN">LUAN DE FRAGA OLIVEIRA</option>
+                    <option value="RIQUELMI">RIQUELMI MOREIRA DOS SANTOS</option>
+                    <option value="MESTRE">MESTRE COORDENADOR</option>
+                </select>
+            </div>
+
+            <!-- CAMPO NÚMERO DA RNC -->
+            <div class="input-group">
+                <label class="input-label" for="numRNC">📜 NÚMERO DA RNC (EX: 000-000):</label>
+                <input type="text" id="numRNC" class="pixel-input" placeholder="000-000" maxlength="7" required oninput="mascaraRNC(this)">
+            </div>
+
+            <!-- CAMPO CUSTO -->
+            <div class="input-group">
+                <label class="input-label" for="custoRNC">💰 CUSTO / PREJUÍZO (R$):</label>
+                <input type="text" id="custoRNC" class="pixel-input" placeholder="R$ 0,00" required oninput="mascaraMoeda(this)">
+            </div>
+
+            <button type="submit" class="btn-action">⚖️ Salvar Registro</button>
+        </form>
+
+        <div id="msgSucesso" class="msg-sucesso">
+            ✅ REGISTRO DE RNC GRAVADO COM SUCESSO NOS PERGAMINHOS!
+        </div>
+    </div>
+
+    <div class="footer-note">"Até mesmo os bravos heróis devem prestar contas de suas falhas..."</div>
+</div>
+
+<script>
+    // Máscara para Data: DD/MM/AAAA
+    function mascaraData(input) {
+        let v = input.value.replace(/\D/g, "");
+        if (v.length > 8) v = v.slice(0, 8);
+        if (v.length >= 5) {
+            v = v.replace(/^(\d{2})(\d{2})(\d{1,4})$/, "$1/$2/$3");
+        } else if (v.length >= 3) {
+            v = v.replace(/^(\d{2})(\d{1,2})$/, "$1/$2");
+        }
+        input.value = v;
+    }
+
+    // Máscara para Número da RNC: 000-000
+    function mascaraRNC(input) {
+        let v = input.value.replace(/[^0-9a-zA-Z]/g, "").toUpperCase();
+        if (v.length > 6) v = v.slice(0, 6);
+        if (v.length > 3) {
+            v = v.replace(/^([0-9A-Z]{3})([0-9A-Z]{1,3})$/, "$1-$2");
+        }
+        input.value = v;
+    }
+
+    // Máscara para Custo: R$ 0,00
+    function mascaraMoeda(input) {
+        let v = input.value.replace(/\D/g, "");
+        if (!v) {
+            input.value = "";
+            return;
+        }
+        v = (parseFloat(v) / 100).toFixed(2) + "";
+        v = v.replace(".", ",");
+        v = v.replace(/(\d)(?=(\d{3})+(?!\d))/g, "$1.");
+        input.value = "R$ " + v;
+    }
+
+    // Processamento do Formulário
+    function salvarRNC(e) {
+        e.preventDefault();
+        
+        const data = document.getElementById('dataRNC').value;
+        const resp = document.getElementById('responsavel').value;
+        const rnc = document.getElementById('numRNC').value;
+        const custo = document.getElementById('custoRNC').value;
+
+        console.log("RNC Registrada:", { data, responsavel: resp, numeroRNC: rnc, custo });
+
+        const msg = document.getElementById('msgSucesso');
+        msg.style.display = 'block';
+
+        setTimeout(() => {
+            msg.style.display = 'none';
+            document.getElementById('rncForm').reset();
+        }, 3000);
+    }
+</script>
+
+</body>
+</html>
