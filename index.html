@@ -276,6 +276,27 @@
     .ind-table td.r { text-align:right; font-family:'Press Start 2P',cursive; font-size:4.2pt; color:#6ee7b7; white-space:nowrap; }
     tr.demais-row td { background:#3f1d1d; color:#fca5a5; font-style:italic; }
     .pts-xp { font-size:6.5pt; color:var(--creme2); opacity:.65; }
+
+    /* ---------- MURAL DAS MALDIÇÕES (RNC) ---------- */
+    /* bloco de desconto por RNC no painel de bonificação */
+    .premio-rnc { background: radial-gradient(circle,#3f1113 0%,#1a0708 100%); border:2px solid #b91c1c; border-radius:6px; padding:10px; margin-bottom:10px; text-align:center; }
+    .premio-rnc .v { font-family:'Press Start 2P',cursive; font-size:9pt; color:#fca5a5; text-shadow:0 0 8px #7f1d1d; margin:4px 0; }
+    .premio-rnc .l { font-size:7.5pt; color:#fecaca; line-height:1.4; }
+    /* resumo em 3 caixas */
+    .rnc-resumo { display:grid; grid-template-columns:repeat(3,1fr); gap:6px; margin-bottom:10px; }
+    .rnc-resumo > div { background:#1a0e17; border:1px solid #7f1d1d; border-radius:5px; padding:8px 4px; text-align:center; }
+    .rnc-resumo .l { display:block; font-size:6.5pt; color:#fecaca; line-height:1.3; margin-bottom:5px; }
+    .rnc-resumo .v { display:block; font-family:'Press Start 2P',cursive; font-size:7pt; color:var(--creme2); }
+    /* tabela de RNCs */
+    .rnc-table { width:100%; border-collapse:collapse; }
+    .rnc-table th { font-family:'Press Start 2P',cursive; font-size:4pt; background:#450a0a; color:#fecaca; padding:6px 3px; text-align:left; border:1px solid #7f1d1d; }
+    .rnc-table td { font-size:8.5pt; padding:7px 4px; border:1px solid var(--borda2); background:#170a12; vertical-align:middle; }
+    .rnc-table td.d { color:var(--creme2); white-space:nowrap; }
+    .rnc-table td.resp { color:var(--creme2); }
+    .rnc-table td.num { font-family:'Courier New',monospace; color:var(--ouro); letter-spacing:.5px; }
+    .rnc-table td.cst { text-align:right; font-family:'Press Start 2P',cursive; font-size:5pt; color:#fca5a5; white-space:nowrap; }
+    .rnc-table tfoot td { background:#2a0c0c; font-family:'Press Start 2P',cursive; font-size:4.5pt; color:#fecaca; }
+    .rnc-vazio { text-align:center; font-size:8.5pt; color:#a7f3d0; background:#0c2a20; border:1px dashed #34d399; border-radius:5px; padding:14px 10px; line-height:1.5; }
 </style>
 </head>
 <body>
@@ -346,8 +367,14 @@
 
         <div class="panel">
             <div class="panel-title"><span>💰 Bonificação / Prêmio</span></div>
-            <div class="panel-sub">R$ 500 × % da meta, dividido por 8 indicadores e rateado por trabalho. DEMAIS (vermelho) = o que o setor deixou de ganhar.</div>
+            <div class="panel-sub">R$ 500 × % da meta, dividido por 8 indicadores e rateado por trabalho. DEMAIS (vermelho) = o que o setor deixou de ganhar. RNCs (🩸) descontam do bônus.</div>
             <div id="coord-premios"></div>
+        </div>
+
+        <div class="panel">
+            <div class="panel-title"><span>🩸 Mural das Maldições</span></div>
+            <div class="panel-sub">Histórico completo de RNCs do mês. Cada uma tira XP do responsável e seu custo (R$) é abatido do bônus da equipe.</div>
+            <div id="coord-mural"></div>
         </div>
 
         <div class="panel">
@@ -450,6 +477,12 @@
         </div>
 
         <div class="panel">
+            <div class="panel-title"><span>🩸 Mural das Maldições</span></div>
+            <div class="panel-sub">Somente as SUAS RNCs deste mês. Cada uma tira XP e reduz o bônus da equipe.</div>
+            <div id="op-mural"></div>
+        </div>
+
+        <div class="panel">
             <div class="panel-title"><span>📈 Seu Histórico de XP</span></div>
             <div id="op-historico"></div>
         </div>
@@ -475,6 +508,23 @@ const SHEETS = {
   meta:        { id:'1ursv7pK7JFy344PZe3JcM7yz7eKX3GQJkZunSj4Ll38', gid:'0' }, // Meta mensal (A=período, B=quantidade)
 };
 
+// 1b) PLANILHA DAS RNCs (Mural das Maldições). É a mesma planilha em que o
+//     formulario_rnc.html grava. Colunas: A=data, B=responsável (nome), C=nº RNC, D=custo (R$).
+//     -> COMO É LIDA: o portal tenta primeiro pelo "id" (endpoint gviz, igual às outras 9,
+//        é o mais confiável). Se o "id" ficar vazio, ele cai no link "Publicar na Web" (CSV)
+//        que já está preenchido abaixo — pode funcionar direto, mas alguns navegadores
+//        bloqueiam por CORS. O CAMINHO GARANTIDO é preencher o "id":
+//          1. abra a planilha das RNCs normalmente (não o link publicado);
+//          2. na barra de endereço:  .../spreadsheets/d/  ESTE_TRECHO  /edit  ← copie ESTE_TRECHO;
+//          3. cole no campo id abaixo e confira se a planilha está como
+//             "Qualquer pessoa com o link → Leitor".
+const SHEETS_RNC = {
+  id:  '',        // <-- COLE AQUI O ID DA PLANILHA DAS RNCs (recomendado). Ex.: '1AbC...xyz'
+  gid: '0',       // número da aba (0 = primeira)
+  // Fallback automático caso o "id" acima fique vazio (link "Publicar na Web" → CSV):
+  pubCsvUrl: 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTNF8jaqKzAkVlkg0fj4Q2Pf9GnxfqLuYpOWsYuAmdw4KOppyn3Uq7zKQ3eHFkm8v4szp5IgOBBcjRX/pub?gid=0&single=true&output=csv',
+};
+
 // 2) COORDENADOR (Mestre) — TROQUE A SENHA
 const COORDENADOR = { id:'MESTRE', nome:'MESTRE COORDENADOR', senha:'mestre@Belt', isMaster:true };
 
@@ -491,7 +541,8 @@ const OPERADORES = [
 //     Nos relatórios ele aparece com nomes diferentes — TODOS os aliases abaixo somam
 //     para o mestre (a coluna C de "Alteração de produtos", por ex., usa "BOT").
 const MESTRE = { id:'BOT', nome:'MESTRE (BOT)', isMaster:true,
-                 aliases:['BOT','AUTOMACAO BOT','MICKAEL KALIL WAGNER DE OLIVEIRA'] };
+                 aliases:['BOT','AUTOMACAO BOT','MICKAEL KALIL WAGNER DE OLIVEIRA',
+                          'MESTRE COORDENADOR','MESTRE'] };  // "MESTRE ..." (form de RNC) também soma p/ o mestre
 // Todos que pontuam no mês (competem por prêmio e Hall): os 4 operadores + o mestre.
 const PARTICIPANTES = [...OPERADORES, MESTRE];
 
@@ -504,6 +555,9 @@ const RASTREADOS = [...PARTICIPANTES, DEMAIS];
 
 // 4) TABELA DE XP (recompensas e penalidades). Produto ajustado vale 1 XP; as demais tarefas, 10 XP.
 const XP  = { pedido:10, separado:10, op:10, ajuste:1, nf:10, ct:10, conferido:10, recebido:10, missaoDiaria:100 };
+// PEN.rnc = XP perdido POR CADA RNC. As RNCs agora vêm SOZINHAS da planilha (Mural das
+// Maldições); o campo "rnc" em AJUSTES_MANUAIS continua existindo só p/ lançamentos manuais
+// extras (soma com as da planilha). O custo em R$ da RNC é tratado à parte (desconto do bônus).
 const PEN = { atraso:500, falta:5000, rnc:1000 };
 
 // 4b) XP necessário para subir 1 nível (a cada 100 XP acumulados, sobe 1 nível).
@@ -649,11 +703,11 @@ function fmtCompacto(n){
 // ---------- busca no Google Sheets (endpoint gviz, público) ----------
 // Leitura via <script> (JSONP) — NÃO passa pela regra de CORS, por isso funciona
 // a partir do GitHub Pages. O endpoint gviz devolve  cb({...})  e nós capturamos.
-function fetchSheet(cfg){
+function fetchSheet(cfg, headers=1){
   return new Promise((resolve, reject)=>{
     const cb = '__gviz_' + Math.random().toString(36).slice(2) + '_' + Date.now();
     const url = `https://docs.google.com/spreadsheets/d/${cfg.id}/gviz/tq`
-              + `?gid=${encodeURIComponent(cfg.gid)}&headers=1`
+              + `?gid=${encodeURIComponent(cfg.gid)}&headers=${headers}`
               + `&tqx=out:json;responseHandler:${cb}&_=${Date.now()}`;
     const s = document.createElement('script');
     let feito = false;
@@ -683,18 +737,75 @@ async function carregarTudo(){
   chaves.forEach(k=>{ if(!(k in brutos)) brutos[k] = []; });
 
   const novo = preprocessar(brutos);
-  const snap = carregarSnapshot();
 
-  if(ERROS_FETCH.length === chaves.length && snap){
+  // RNCs (Mural das Maldições) — planilha própria, leitor próprio (gviz por id OU CSV publicado)
+  try { novo.rnc = await carregarRNC(); }
+  catch(e){ ERROS_FETCH.push('rnc'); novo.rnc = []; }
+
+  const snap = carregarSnapshot();
+  const gvizErros = ERROS_FETCH.filter(k=>k!=='rnc');   // as 9 planilhas gviz (RNC é à parte)
+
+  if(gvizErros.length === chaves.length && snap){
     // Sem rede: usa a última cópia salva por completo
-    DADOS = snap.dados; ULTIMA_SYNC = new Date(snap.ts); MODO_OFFLINE = true;
+    DADOS = snap.dados; if(!DADOS.rnc) DADOS.rnc = []; ULTIMA_SYNC = new Date(snap.ts); MODO_OFFLINE = true;
   } else {
     // Para abas que falharam pontualmente, aproveita a cópia anterior (se houver)
     if(snap){ ERROS_FETCH.forEach(k=>{ if(snap.dados[k] && snap.dados[k].length) novo[k] = snap.dados[k]; }); }
     DADOS = novo; ULTIMA_SYNC = new Date(); MODO_OFFLINE = false;
     salvarSnapshot();
   }
+  if(!DADOS.rnc) DADOS.rnc = [];
   for(const k in cacheMes) delete cacheMes[k];
+}
+
+// ---------- leitura das RNCs (Mural das Maldições) ----------
+// Devolve [{ data, op, opNome, numero, custo }]. Ordem das colunas: A=data, B=nome, C=nº, D=custo.
+function rncDeCelulas(c){
+  const data = parseData(c[0]); if(!data) return null;               // sem data válida = linha de cabeçalho/vazia → ignora
+  const nome = celStr(c[1]);
+  return { data, op: resolveOp(nome), opNome: nome, numero: celStr(c[2]), custo: parseNum(c[3]) };
+}
+function rncDeLinha(r){
+  const data = parseData({ v:(r[0]||'').trim() }); if(!data) return null;
+  const nome = String(r[1]||'').trim();
+  return { data, op: resolveOp(nome), opNome: nome, numero: String(r[2]||'').trim(), custo: parseNum({ v:(r[3]||'').trim() }) };
+}
+async function carregarRNC(){
+  const cfg = SHEETS_RNC;
+  const idOk = cfg.id && !/COLE|AQUI|SEU_ID/i.test(cfg.id);
+  // 1) Caminho recomendado: gviz pelo id (mesma técnica das outras planilhas; usa headers=0 p/
+  //    não perder a 1ª linha caso a planilha não tenha cabeçalho — filtramos pela data).
+  if(idOk){
+    const rows = await fetchSheet(cfg, 0);
+    return rows.map(rncDeCelulas).filter(Boolean);
+  }
+  // 2) Fallback: CSV do link "Publicar na Web".
+  if(cfg.pubCsvUrl){
+    const sep = cfg.pubCsvUrl.indexOf('?') > -1 ? '&' : '?';
+    const resp = await fetch(cfg.pubCsvUrl + sep + '_=' + Date.now(), { cache:'no-store' });
+    if(!resp.ok) throw new Error('csv ' + resp.status);
+    const txt = await resp.text();
+    return parseCSV(txt).map(rncDeLinha).filter(Boolean);
+  }
+  return [];
+}
+// CSV mínimo e robusto (aspas, vírgulas dentro de aspas, CRLF).
+function parseCSV(text){
+  const rows = []; let row = [], field = '', i = 0, q = false;
+  text = String(text).replace(/\r\n/g,'\n').replace(/\r/g,'\n');
+  while(i < text.length){
+    const ch = text[i];
+    if(q){
+      if(ch === '"'){ if(text[i+1] === '"'){ field += '"'; i += 2; continue; } q = false; i++; continue; }
+      field += ch; i++; continue;
+    }
+    if(ch === '"'){ q = true; i++; continue; }
+    if(ch === ','){ row.push(field); field = ''; i++; continue; }
+    if(ch === '\n'){ row.push(field); rows.push(row); row = []; field = ''; i++; continue; }
+    field += ch; i++;
+  }
+  row.push(field); rows.push(row);
+  return rows.filter(r => r.some(c => String(c).trim() !== ''));
 }
 
 // Guarda a última leitura no aparelho, para abrir offline mostrando o último SYNC.
@@ -710,12 +821,13 @@ function carregarSnapshot(){
     const s = localStorage.getItem('jornada_snapshot'); if(!s) return null;
     const o = JSON.parse(s); const d = {};
     for(const k in o.dados){ d[k] = o.dados[k].map(r=>({ ...r, data: r.data!=null ? new Date(r.data) : null })); }
+    if(!d.rnc) d.rnc = [];   // cópias antigas (antes do Mural) não tinham RNC
     return { ts:o.ts, dados:d };
   } catch(e){ return null; }
 }
 
 function preprocessar(b){
-  const D = { pedidos:[], separados:[], ops:[], alteracoes:[], documentos:[], conferidos:[], recebimento:[], avanco:[], metaMes:{} };
+  const D = { pedidos:[], separados:[], ops:[], alteracoes:[], documentos:[], conferidos:[], recebimento:[], avanco:[], metaMes:{}, rnc:[] };
   (b.pedidos||[]).forEach(c=>{ const data=parseData(c[2]); if(!data) return; D.pedidos.push({ data, op:resolveOp(celStr(c[1])), valor:parseNum(c[4]) }); });
   (b.separados||[]).forEach(c=>{ const data=parseData(c[2]); if(!data) return; D.separados.push({ data, op:resolveOp(celStr(c[1])), area:celStr(c[4]).toUpperCase() }); });
   (b.ops||[]).forEach(c=>{ const data=parseData(c[2])||parseData(c[1]); if(!data) return; D.ops.push({ data, op:resolveOp(celStr(c[0])), area:celStr(c[7]).toUpperCase() }); });
@@ -732,8 +844,8 @@ function preprocessar(b){
 function mesesDisponiveis(){
   const set = new Set();
   if(DADOS){
-    ['pedidos','separados','ops','alteracoes','documentos','conferidos','recebimento','avanco'].forEach(k=>{
-      DADOS[k].forEach(r=> set.add(mesDe(r.data)));
+    ['pedidos','separados','ops','alteracoes','documentos','conferidos','recebimento','avanco','rnc'].forEach(k=>{
+      (DADOS[k]||[]).forEach(r=> r && r.data && set.add(mesDe(r.data)));
     });
   }
   const hoje = new Date(); set.add(mesDe(hoje));
@@ -754,6 +866,10 @@ function computeTotais(mesKey, guardiaoId){
   DADOS.conferidos.forEach(r=>{ if(mesDe(r.data)!==mesKey) return; const b=B(r.op); if(!b) return; b.conferidos++; });
   DADOS.recebimento.forEach(r=>{ if(mesDe(r.data)!==mesKey) return; const b=B(r.op); if(!b) return; b.recebidos++; });
 
+  // RNCs do mês (Mural das Maldições): agrupa por responsável. Nome que não casa vira DEMAIS.
+  const rncPorOp = {}; RASTREADOS.forEach(o=> rncPorOp[o.id]=[]);
+  (DADOS.rnc||[]).forEach(r=>{ if(mesDe(r.data)!==mesKey) return; const id = (rncPorOp[r.op]!==undefined)?r.op:'DEMAIS'; rncPorOp[id].push(r); });
+
   RASTREADOS.forEach(o=>{
     const R=res[o.id], b=R.b;
     R.xpPedidos   = b.qtdPedidos * XP.pedido;
@@ -767,9 +883,14 @@ function computeTotais(mesKey, guardiaoId){
     R.recompensaXP = R.xpPedidos+R.xpSeparados+R.xpOps+R.xpAjustes+R.xpNf+R.xpCt+R.xpConf+R.xpReceb;
     const aj = (AJUSTES_MANUAIS[mesKey] && AJUSTES_MANUAIS[mesKey][o.id]) || {};
     R.aj = { atrasos:aj.atrasos||0, faltas:aj.faltas||0, rnc:aj.rnc||0, missoesDiarias:aj.missoesDiarias||0, bonusExtra:aj.bonusExtra||0 };
+    // RNCs: da planilha (Mural) + eventuais lançamentos manuais em AJUSTES_MANUAIS.rnc
+    R.rncList        = rncPorOp[o.id] || [];
+    R.rncSheetCount  = R.rncList.length;
+    R.rncCustoSheet  = R.rncList.reduce((s,x)=> s + (x.custo||0), 0);   // R$ (usado no desconto do bônus)
+    R.rncCount       = R.aj.rnc + R.rncSheetCount;                      // total de RNCs p/ a penalidade de XP
     R.missaoXP = R.aj.missoesDiarias*XP.missaoDiaria;
     R.bonusXP  = R.aj.bonusExtra;
-    R.penalXP  = R.aj.atrasos*PEN.atraso + R.aj.faltas*PEN.falta + R.aj.rnc*PEN.rnc;
+    R.penalXP  = R.aj.atrasos*PEN.atraso + R.aj.faltas*PEN.falta + R.rncCount*PEN.rnc;
     let positivo = R.recompensaXP + R.missaoXP + R.bonusXP;
     R.ehGuardiao = (o.id===guardiaoId);
     R.bonusGuardiao = R.ehGuardiao ? Math.round(positivo*0.10) : 0;
@@ -807,8 +928,8 @@ function nivelInfo(xp){
 function rankingOrdenado(mesKey){
   const { totais } = computo(mesKey);
   const P = calcularPremios(mesKey);
-  return RASTREADOS.map(o=>({ op:o, R:totais[o.id], ni:nivelInfo(totais[o.id].total), premio:P.premio[o.id] }))
-                   .sort((a,b)=> (b.premio - a.premio) || (b.R.total - a.R.total));  // por R$; empate → por XP
+  return RASTREADOS.map(o=>({ op:o, R:totais[o.id], ni:nivelInfo(totais[o.id].total), premio:P.premioLiquido[o.id], premioBruto:P.premio[o.id] }))
+                   .sort((a,b)=> (b.premio - a.premio) || (b.R.total - a.R.total));  // por R$ líquido; empate → por XP
 }
 
 // ---------- avanço de estoque ----------
@@ -884,7 +1005,28 @@ function calcularPremios(mesKey){
   });
   const distribuido = RASTREADOS.reduce((s,o)=> s + premio[o.id], 0);
   const perdidoInd  = pool - distribuido;   // fatias de indicadores SEM atividade (não distribuídas)
-  return { meta, metaFrac, pool, poolPorInd, indAtivos, indTotais:INDICADORES.length, distribuido, perdidoInd, premio, premioPorInd, somaAddr:av.somaAddr };
+
+  // ---- Desconto financeiro por RNC (Mural das Maldições) ----
+  // O custo (R$) de todas as RNCs do mês é abatido do bônus da EQUIPE, rateado entre os
+  // PARTICIPANTES (4 operadores + mestre) na proporção do prêmio de cada um. Como o abatimento
+  // é proporcional, todos caem pelo MESMO fator -> a ordem do Hall não muda. DEMAIS (dinheiro já
+  // "perdido" p/ fora do setor) não entra no rateio do desconto.
+  const custoRNCMes = (DADOS.rnc||[]).filter(r=> mesDe(r.data)===mesKey).reduce((s,r)=> s + (r.custo||0), 0);
+  const distribPart = PARTICIPANTES.reduce((s,o)=> s + (premio[o.id]||0), 0);
+  const kRNC = distribPart>0 ? Math.min(1, custoRNCMes/distribPart) : 0;   // fração do bônus consumida
+  const descontoRNC = {}, premioLiquido = {};
+  RASTREADOS.forEach(o=>{
+    const isPart = PARTICIPANTES.some(p=>p.id===o.id);
+    descontoRNC[o.id]   = isPart ? (premio[o.id]*kRNC) : 0;
+    premioLiquido[o.id] = premio[o.id] - descontoRNC[o.id];
+  });
+  const descontoTotal   = distribPart*kRNC;                 // = min(custoRNCMes, distribPart) realmente abatido
+  const custoNaoCoberto = Math.max(0, custoRNCMes - descontoTotal);   // custo que o bônus não cobriu
+  const poolLiquido     = pool - descontoTotal;
+
+  return { meta, metaFrac, pool, poolPorInd, indAtivos, indTotais:INDICADORES.length, distribuido, perdidoInd,
+           premio, premioPorInd, somaAddr:av.somaAddr,
+           custoRNCMes, distribPart, kRNC, descontoRNC, premioLiquido, descontoTotal, custoNaoCoberto, poolLiquido };
 }
 
 // ---------- avatares pixel ----------
@@ -1067,6 +1209,7 @@ function renderCoordenador(){
 
   renderPremios(mes);       // painel de bonificação (R$)
   renderIndicadores(mes);   // ranking por indicador com bônus em R$
+  renderMuralCoord(mes);    // Mural das Maldições (todas as RNCs do mês)
 }
 
 // ---------- painel de prêmio (coordenador) ----------
@@ -1086,12 +1229,27 @@ function renderPremios(mesKey){
     topo = `<div class="premio-tot"><div class="v">${fmtMoeda(P.pool)}</div>
       <div class="l">Prêmio do mês · ${fmt(P.somaAddr)} / ${fmt(P.meta)} endereçados (<b style="color:var(--ouro)">${pctMeta}%</b> da meta)</div>${naoDist}</div>`;
   }
+  // Bloco do desconto por RNC (só aparece se houver custo de maldições no mês)
+  let blocoRNC = '';
+  if(P.custoRNCMes > 0.005){
+    const naoCob = P.custoNaoCoberto > 0.005
+      ? `<div class="l" style="color:#fca5a5;margin-top:4px">⚠️ ${fmtMoeda(P.custoNaoCoberto)} do prejuízo não coube no bônus deste mês.</div>` : '';
+    blocoRNC = `<div class="premio-rnc">
+        <div class="l">🩸 Desconto por RNC (maldições)</div>
+        <div class="v">− ${fmtMoeda(P.descontoTotal)}</div>
+        <div class="l">Custo total das RNCs: ${fmtMoeda(P.custoRNCMes)} · rateado por % de participação</div>${naoCob}
+        <div class="l" style="margin-top:6px">Bônus líquido da equipe: <b style="color:#6ee7b7">${fmtMoeda(Math.max(0,P.poolLiquido))}</b></div>
+      </div>`;
+  }
   const linhas = RASTREADOS
-    .map(o=>({ o, R:totais[o.id], v:P.premio[o.id] }))
+    .map(o=>({ o, R:totais[o.id], v:P.premioLiquido[o.id], d:P.descontoRNC[o.id] }))
     .sort((a,b)=> b.v - a.v)
-    .map(x=>`<tr class="${x.o.isDemais?'demais-row':''}"><td>${x.o.nome.split(' ')[0]}</td>
-        <td class="q">${fmt(x.R.total)} XP</td><td class="r">${fmtMoeda(x.v)}</td></tr>`).join('');
-  el.innerHTML = topo + `<table class="premio-table"><tbody>${linhas}</tbody></table>`;
+    .map(x=>{
+      const desc = x.d > 0.005 ? `<div class="tiny" style="color:#fca5a5">−${fmtMoeda(x.d)} RNC</div>` : '';
+      return `<tr class="${x.o.isDemais?'demais-row':''}"><td>${x.o.nome.split(' ')[0]}</td>
+        <td class="q">${fmt(x.R.total)} XP</td><td class="r">${fmtMoeda(x.v)}${desc}</td></tr>`;
+    }).join('');
+  el.innerHTML = topo + blocoRNC + `<table class="premio-table"><tbody>${linhas}</tbody></table>`;
 }
 
 // ---------- ranking por indicador (coordenador) ----------
@@ -1139,10 +1297,61 @@ function tabelaExtrato(R){
   if(R.bonusGuardiao) html += linha('🛡️ Bônus Guardião (+10%)', '', R.bonusGuardiao, 'bonus');
   if(R.aj.atrasos)  html += linha('Atrasos', R.aj.atrasos+'×', -(R.aj.atrasos*PEN.atraso), 'neg');
   if(R.aj.faltas)   html += linha('Faltas', R.aj.faltas+'×', -(R.aj.faltas*PEN.falta), 'neg');
-  if(R.aj.rnc)      html += linha('RNC', R.aj.rnc+'×', -(R.aj.rnc*PEN.rnc), 'neg');
+  if(R.rncCount)    html += linha('RNC (maldições)', R.rncCount+'×', -(R.rncCount*PEN.rnc), 'neg');
   html += linha('TOTAL DO MÊS', '', R.total, 'tot');
   html += `</tbody></table>`;
   return html;
+}
+
+// ---------- MURAL DAS MALDIÇÕES (RNCs) ----------
+function primeiroNome(nome){ return String(nome||'').split(' ')[0] || '—'; }
+// Tabela de RNCs. mostraResp = true no painel do mestre (mostra a coluna Responsável).
+function tabelaRnc(list, mostraResp){
+  const linhas = list
+    .slice().sort((a,b)=> b.data - a.data)
+    .map(r=>`<tr>
+        <td class="d">${r.data.toLocaleDateString('pt-BR')}</td>
+        ${mostraResp ? `<td class="resp">${primeiroNome(r.opNome)}</td>` : ''}
+        <td class="num">${r.numero||'—'}</td>
+        <td class="cst">${fmtMoeda(r.custo||0)}</td></tr>`).join('');
+  const totCusto = list.reduce((s,r)=> s + (r.custo||0), 0);
+  return `<table class="rnc-table">
+      <thead><tr><th>DATA</th>${mostraResp?'<th>HERÓI</th>':''}<th>Nº RNC</th><th>CUSTO</th></tr></thead>
+      <tbody>${linhas}</tbody>
+      <tfoot><tr><td colspan="${mostraResp?3:2}">TOTAL (${list.length} RNC${list.length!==1?'s':''})</td><td class="cst">${fmtMoeda(totCusto)}</td></tr></tfoot>
+    </table>`;
+}
+// Painel do mestre: todas as RNCs do mês.
+function renderMuralCoord(mesKey){
+  const el = document.getElementById('coord-mural'); if(!el) return;
+  const P = calcularPremios(mesKey);
+  const list = (DADOS.rnc||[]).filter(r=> mesDe(r.data)===mesKey);
+  if(!list.length){ el.innerHTML = `<div class="rnc-vazio">✨ Nenhuma maldição registrada neste mês. A guilda anda impecável!</div>`; return; }
+  const xpPerdido = list.length * PEN.rnc;
+  const resumo = `<div class="rnc-resumo">
+      <div><span class="l">RNCs no mês</span><span class="v">${list.length}</span></div>
+      <div><span class="l">XP perdido (total)</span><span class="v" style="color:#fca5a5">−${fmt(xpPerdido)}</span></div>
+      <div><span class="l">Custo abatido do bônus</span><span class="v" style="color:#fca5a5">−${fmtMoeda(P.descontoTotal)}</span></div>
+    </div>`;
+  const alerta = P.custoNaoCoberto > 0.005
+    ? `<div class="tiny" style="color:#fca5a5;margin:8px 0 0">⚠️ ${fmtMoeda(P.custoNaoCoberto)} do prejuízo passou do bônus disponível do mês.</div>` : '';
+  el.innerHTML = resumo + tabelaRnc(list, true) + alerta;
+}
+// Painel do operador: apenas as RNCs dele (privacidade).
+function renderMuralOperador(mesKey, op){
+  const el = document.getElementById('op-mural'); if(!el) return;
+  const { totais } = computo(mesKey);
+  const R = totais[op.id];
+  const list = R.rncList || [];
+  if(!list.length){ el.innerHTML = `<div class="rnc-vazio">🛡️ Nenhuma maldição sua neste mês. Honra à sua espada!</div>`; return; }
+  const P = calcularPremios(mesKey);
+  const meuDesc = P.descontoRNC[op.id] || 0;
+  const resumo = `<div class="rnc-resumo">
+      <div><span class="l">Suas RNCs</span><span class="v">${list.length}</span></div>
+      <div><span class="l">XP perdido</span><span class="v" style="color:#fca5a5">−${fmt(list.length*PEN.rnc)}</span></div>
+      <div><span class="l">Desconto no seu prêmio</span><span class="v" style="color:#fca5a5">−${fmtMoeda(meuDesc)}</span></div>
+    </div>`;
+  el.innerHTML = resumo + tabelaRnc(list, false);
 }
 
 // ---------- OPERADOR ----------
@@ -1172,14 +1381,20 @@ function renderOperador(){
     : '';
 
   const premios = calcularPremios(mes);
-  const meuPremio = premios.premio[op.id] || 0;
+  const meuPremio  = premios.premioLiquido[op.id] || 0;
+  const meuDesc    = premios.descontoRNC[op.id]   || 0;
+  const notaDesc = meuDesc > 0.005
+    ? `<div class="tiny" style="color:#fca5a5;margin-top:4px">Já descontado −${fmtMoeda(meuDesc)} (rateio das RNCs da equipe)</div>` : '';
   document.getElementById('op-resumo').innerHTML = `
     <div class="stat-box"><div class="stat-label">XP total no mês</div><div class="stat-value">${fmt(R.total)}</div></div>
     <div class="stat-box"><div class="stat-label">Posição no Hall</div><div class="stat-value">${pos}º</div></div>
-    <div class="prize-box"><div class="l">💰 Valor a receber (prêmio do mês)</div><div class="v">${fmtMoeda(meuPremio)}</div></div>`;
+    <div class="prize-box"><div class="l">💰 Valor a receber (prêmio do mês)</div><div class="v">${fmtMoeda(meuPremio)}</div>${notaDesc}</div>`;
 
   // Extrato
   document.getElementById('op-extrato-wrap').innerHTML = tabelaExtrato(R);
+
+  // Mural das Maldições (só as RNCs do próprio operador)
+  renderMuralOperador(mes, op);
 
   // Informações do projeto (endereçamento)
   renderProjetoOperador(mes);
