@@ -453,25 +453,6 @@
         </div>
 
         <div class="panel">
-            <div class="panel-title"><span>🎁 Loot do Dia (Check-in)</span></div>
-            <div class="powerup-box">
-                <div class="powerup-title">POWER-UP ENCONTRADO!</div>
-                <div class="powerup-name" id="op-powerup-nome">???</div>
-                <div class="powerup-eff" id="op-powerup-efeito"></div>
-                <div class="powerup-cond">Liberado ao registrar check-in no horário certo (seg a sex, sem atraso). Válido até 23:59 de hoje.</div>
-            </div>
-        </div>
-
-        <div class="panel">
-            <div class="panel-title"><span>📜 Missão Diária</span></div>
-            <div class="mission-item">
-                <span id="op-missao-txt">—</span>
-                <input type="checkbox" id="op-missao-check" onclick="marcarMissao(this)">
-            </div>
-            <div class="tiny" style="margin-top:8px;">Vale <b style="color:var(--ouro)">+100 XP</b>. A marcação é um lembrete pessoal; o XP oficial é lançado pelo coordenador.</div>
-        </div>
-
-        <div class="panel">
             <div class="panel-title"><span>🧾 Extrato de Pontos (XP)</span></div>
             <div id="op-extrato-wrap"></div>
         </div>
@@ -526,15 +507,15 @@ const SHEETS_RNC = {
 };
 
 // 2) COORDENADOR (Mestre) — TROQUE A SENHA
-const COORDENADOR = { id:'MESTRE', nome:'MESTRE COORDENADOR', senha:'mestre@Belt', isMaster:true };
+const COORDENADOR = { id:'MESTRE', nome:'MESTRE COORDENADOR', senha:'k8T9vP2xL4', isMaster:true };
 
 // 3) OPERADORES (o "id" deve ser o PRIMEIRO NOME, igual ao que aparece nas planilhas)
 //    Troque as senhas. As cores só definem o visual do avatar pixelado.
 const OPERADORES = [
-  { id:'ARTHUR',   nome:'ARTHUR PEREIRA WEBER',       senha:'@Belt102030', skin:'#fca5a5', cabelo:'#854d0e', roupa:'#15803d' },
-  { id:'GABRIEL',  nome:'GABRIEL GONCALVES PERES',    senha:'@Belt102030', skin:'#fca5a5', cabelo:'#475569', roupa:'#b91c1c' },
-  { id:'LUAN',     nome:'LUAN DE FRAGA OLIVEIRA',     senha:'@Belt102030', skin:'#fbcfe8', cabelo:'#fef08a', roupa:'#047857' },
-  { id:'RIQUELMI', nome:'RIQUELMI MOREIRA DOS SANTOS',senha:'@Belt102030', skin:'#fed7aa', cabelo:'#78350f', roupa:'#64748b' },
+  { id:'ARTHUR',   nome:'ARTHUR PEREIRA WEBER',       senha:'p9K2v8W4tR', skin:'#fca5a5', cabelo:'#854d0e', roupa:'#15803d' },
+  { id:'GABRIEL',  nome:'GABRIEL GONCALVES PERES',    senha:'x7N2k8M5vQ', skin:'#fca5a5', cabelo:'#475569', roupa:'#b91c1c' },
+  { id:'LUAN',     nome:'LUAN DE FRAGA OLIVEIRA',     senha:'m7R4k9X2vN', skin:'#fbcfe8', cabelo:'#fef08a', roupa:'#047857' },
+  { id:'RIQUELMI', nome:'RIQUELMI MOREIRA DOS SANTOS',senha:'q3B8w1Z5mX', skin:'#fed7aa', cabelo:'#78350f', roupa:'#64748b' },
 ];
 
 // 3b) O MESTRE também realiza tarefas e entra no ranking e no rateio do prêmio.
@@ -1392,18 +1373,6 @@ function renderOperador(){
   // Informações do projeto (endereçamento)
   renderProjetoOperador(mes);
 
-  // Power-up do dia (estável por dia + operador)
-  const pu = POWERUPS[ hashDia(hojeStr()+'|'+op.id) % POWERUPS.length ];
-  document.getElementById('op-powerup-nome').textContent = pu.nome;
-  document.getElementById('op-powerup-efeito').textContent = pu.efeito;
-
-  // Missão diária (mesma para todos no dia)
-  const mis = MISSOES_POOL[ hashDia(hojeStr()) % MISSOES_POOL.length ];
-  document.getElementById('op-missao-txt').textContent = mis;
-  const chk = document.getElementById('op-missao-check');
-  const marcada = localStorage.getItem('missao_'+op.id+'_'+hojeStr())==='1';
-  chk.checked = marcada;
-
   // Histórico de XP por mês
   const meses = mesesDisponiveis().slice().reverse(); // crescente p/ o gráfico
   const itens = meses.map(m=>{
@@ -1443,11 +1412,6 @@ function htmlInfoProjeto(mes){
 }
 function renderProjetoOperador(mes){
   const el = document.getElementById('op-projeto'); if(el) el.innerHTML = htmlInfoProjeto(mes);
-}
-
-function marcarMissao(chk){
-  const uid = localStorage.getItem('jornada_user');
-  localStorage.setItem('missao_'+uid+'_'+hojeStr(), chk.checked?'1':'0');
 }
 
 // ---------- util diário ----------
