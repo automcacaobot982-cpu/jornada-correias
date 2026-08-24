@@ -1007,26 +1007,25 @@ function calcularPremios(mesKey){
   const perdidoInd  = pool - distribuido;   // fatias de indicadores SEM atividade (não distribuídas)
 
   // ---- Desconto financeiro por RNC (Mural das Maldições) ----
-  // O custo (R$) de todas as RNCs do mês é abatido do bônus da EQUIPE, rateado entre os
-  // PARTICIPANTES (4 operadores + mestre) na proporção do prêmio de cada um. Como o abatimento
-  // é proporcional, todos caem pelo MESMO fator -> a ordem do Hall não muda. DEMAIS (dinheiro já
-  // "perdido" p/ fora do setor) não entra no rateio do desconto.
+  // O custo (R$) de todas as RNCs do mês é abatido do bônus da EQUIPE, rateado entre
+  // TODOS os RASTREADOS (4 operadores + mestre + DEMAIS) na proporção do prêmio de cada um.
+  // Como o abatimento é proporcional, todos caem pelo MESMO fator -> a ordem do Hall não muda.
+  // A base do rateio é a soma de TODOS os prêmios distribuídos (= distribuido).
   const custoRNCMes = (DADOS.rnc||[]).filter(r=> mesDe(r.data)===mesKey).reduce((s,r)=> s + (r.custo||0), 0);
-  const distribPart = PARTICIPANTES.reduce((s,o)=> s + (premio[o.id]||0), 0);
-  const kRNC = distribPart>0 ? Math.min(1, custoRNCMes/distribPart) : 0;   // fração do bônus consumida
+  const baseRateio  = RASTREADOS.reduce((s,o)=> s + (premio[o.id]||0), 0);   // idêntico a 'distribuido'
+  const kRNC = baseRateio>0 ? Math.min(1, custoRNCMes/baseRateio) : 0;       // fração do bônus consumida
   const descontoRNC = {}, premioLiquido = {};
   RASTREADOS.forEach(o=>{
-    const isPart = PARTICIPANTES.some(p=>p.id===o.id);
-    descontoRNC[o.id]   = isPart ? (premio[o.id]*kRNC) : 0;
+    descontoRNC[o.id]   = premio[o.id]*kRNC;                 // inclui DEMAIS
     premioLiquido[o.id] = premio[o.id] - descontoRNC[o.id];
   });
-  const descontoTotal   = distribPart*kRNC;                 // = min(custoRNCMes, distribPart) realmente abatido
+  const descontoTotal   = baseRateio*kRNC;                  // = min(custoRNCMes, baseRateio) realmente abatido
   const custoNaoCoberto = Math.max(0, custoRNCMes - descontoTotal);   // custo que o bônus não cobriu
   const poolLiquido     = pool - descontoTotal;
 
   return { meta, metaFrac, pool, poolPorInd, indAtivos, indTotais:INDICADORES.length, distribuido, perdidoInd,
            premio, premioPorInd, somaAddr:av.somaAddr,
-           custoRNCMes, distribPart, kRNC, descontoRNC, premioLiquido, descontoTotal, custoNaoCoberto, poolLiquido };
+           custoRNCMes, baseRateio, distribPart:baseRateio, kRNC, descontoRNC, premioLiquido, descontoTotal, custoNaoCoberto, poolLiquido };
 }
 
 // ---------- avatares pixel ----------
