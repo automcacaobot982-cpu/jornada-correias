@@ -394,7 +394,7 @@
         <div class="panel">
             <div class="panel-title"><span>🏆 Hall da Fama</span></div>
             <table class="leaderboard" id="coord-hall">
-                <thead><tr><th>HERÓI</th><th>NÍVEL</th><th>CLASSE</th><th>XP</th><th>PRÊMIO</th></tr></thead>
+                <thead><tr><th>HERÓI</th><th>NÍVEL</th><th>CLASSE</th><th>XP</th></tr></thead>
                 <tbody></tbody>
             </table>
         </div>
@@ -885,8 +885,8 @@ function computeTotais(mesKey, guardiaoId){
 function campeaoDoMes(mesKey){
   if(!mesKey || !DADOS || !mesTemDados(mesKey)) return null;   // sem dados no mês → sem campeão (encerra a recursão)
   const { totais } = computo(mesKey);   // MESMO XP que o Hall exibe (já com o bônus de Guardião do mês)
-  // Campeão = MAIOR XP líquido (a Medalha de Guardião é por XP, não por R$).
-  // Obs.: com o rateio do prêmio por indicador, o 1º do Hall (por R$) PODE ser outra pessoa.
+  // Campeão = MAIOR XP líquido (a Medalha de Guardião é por XP). O Hall também é ordenado por XP,
+  // então o 1º do Hall coincide com o campeão de XP do mês.
   let best=null, bestXP=-Infinity;
   PARTICIPANTES.forEach(o=>{ if(totais[o.id].total>bestXP){ bestXP=totais[o.id].total; best=o.id; } });
   return bestXP>0 ? best : null;   // só há destaque (e Guardião) com desempenho positivo
@@ -910,7 +910,7 @@ function rankingOrdenado(mesKey){
   const { totais } = computo(mesKey);
   const P = calcularPremios(mesKey);
   return RASTREADOS.map(o=>({ op:o, R:totais[o.id], ni:nivelInfo(totais[o.id].total), premio:P.premioLiquido[o.id], premioBruto:P.premio[o.id] }))
-                   .sort((a,b)=> (b.premio - a.premio) || (b.R.total - a.R.total));  // por R$ líquido; empate → por XP
+                   .sort((a,b)=> (b.R.total - a.R.total) || (b.premio - a.premio));  // por XP (maior→menor); empate → por R$
 }
 
 // ---------- avanço de estoque ----------
@@ -1171,8 +1171,7 @@ function renderCoordenador(){
     tr.innerHTML = `<td>${coroa}${e.op.nome.split(' ')[0]} ${bg}</td>
       <td class="lb-nv">Nv ${e.ni.nivel}</td>
       <td><span class="classe-tag cl-${e.ni.classe}">${e.ni.emoji} ${e.ni.classe}</span></td>
-      <td class="lb-xp">${fmt(e.R.total)}</td>
-      <td class="pts-cell">${fmtMoeda(e.premio)}</td>`;
+      <td class="lb-xp">${fmt(e.R.total)}</td>`;
     tb.appendChild(tr);
   });
 
