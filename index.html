@@ -1313,21 +1313,21 @@ function renderMuralCoord(mesKey){
     ? `<div class="tiny" style="color:#fca5a5;margin:8px 0 0">⚠️ ${fmtMoeda(P.custoNaoCoberto)} do prejuízo passou do bônus disponível do mês.</div>` : '';
   el.innerHTML = resumo + tabelaRnc(list, true) + alerta;
 }
-// Painel do operador: apenas as RNCs dele (privacidade).
+// Painel do operador: os MESMOS cards do mestre (totais da equipe), mas a TABELA só com as RNCs dele.
 function renderMuralOperador(mesKey, op){
   const el = document.getElementById('op-mural'); if(!el) return;
-  const { totais } = computo(mesKey);
-  const R = totais[op.id];
-  const list = R.rncList || [];
-  if(!list.length){ el.innerHTML = `<div class="rnc-vazio">🛡️ Nenhuma maldição sua neste mês. Honra à sua espada!</div>`; return; }
   const P = calcularPremios(mesKey);
-  const meuDesc = P.descontoRNC[op.id] || 0;
+  const todas = (DADOS.rnc||[]).filter(r=> mesDe(r.data)===mesKey);   // do mês inteiro (para os cards)
+  if(!todas.length){ el.innerHTML = `<div class="rnc-vazio">✨ Nenhuma maldição registrada neste mês. A guilda anda impecável!</div>`; return; }
+  const xpPerdido = todas.length * PEN.rnc;
   const resumo = `<div class="rnc-resumo">
-      <div><span class="l">Suas RNCs</span><span class="v">${list.length}</span></div>
-      <div><span class="l">XP perdido</span><span class="v" style="color:#fca5a5">−${fmt(list.length*PEN.rnc)}</span></div>
-      <div><span class="l">Desconto no seu prêmio</span><span class="v" style="color:#fca5a5">−${fmtMoeda(meuDesc)}</span></div>
+      <div><span class="l">RNCs no mês</span><span class="v">${todas.length}</span></div>
+      <div><span class="l">XP perdido (total)</span><span class="v" style="color:#fca5a5">−${fmt(xpPerdido)}</span></div>
+      <div><span class="l">Custo abatido do bônus</span><span class="v" style="color:#fca5a5">−${fmtMoeda(P.descontoTotal)}</span></div>
     </div>`;
-  el.innerHTML = resumo + tabelaRnc(list, false);
+  // A tabela SÓ aparece quando a RNC é do próprio operador; senão, mostra apenas os cards.
+  const minhas = (computo(mesKey).totais[op.id].rncList) || [];
+  el.innerHTML = resumo + (minhas.length ? tabelaRnc(minhas, false) : '');
 }
 
 // ---------- OPERADOR ----------
