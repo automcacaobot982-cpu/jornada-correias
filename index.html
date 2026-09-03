@@ -1141,11 +1141,7 @@ function renderCoordenador(){
   const subEl = document.getElementById('coord-avanco-sub');
   const areasEl = document.getElementById('coord-areas');
   if(av.ult){
-    const done = av.ult.a00+av.ult.a01+av.ult.a02;
-    const base = (av.ult.total>0? av.ult.total : done);
-    const totalGeral = base + av.ult.nd;
-    const pcGeral = totalGeral>0? Math.round((base/totalGeral)*100) : 0;
-    subEl.innerHTML = `Último registro em ${av.ult.data.toLocaleDateString('pt-BR')} — progresso de ajuste: <b style="color:var(--ouro)">${fmt(base)}</b> · faltam <b style="color:#fca5a5">${fmt(av.ult.nd)}</b> (N/D) · <b>${pcGeral}%</b> concluído.`;
+    subEl.innerHTML = `Último registro em ${av.ult.data.toLocaleDateString('pt-BR')}.`;
     areasEl.innerHTML = `
       <div class="area-box"><div class="a-l">A00</div><div class="a-v">${fmt(av.ult.a00)}</div></div>
       <div class="area-box"><div class="a-l">A01</div><div class="a-v">${fmt(av.ult.a01)}</div></div>
