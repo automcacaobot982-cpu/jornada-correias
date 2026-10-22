@@ -129,6 +129,18 @@
 
     .footer-note { text-align:center; font-size:6.5pt; color:#8b7d6b; margin-top:10px; font-style:italic; }
 
+    .btn-install {
+        width: 100%; margin-top:14px; background: linear-gradient(180deg, #2fa84f 0%, #176b31 100%);
+        border: 2px solid var(--verde); border-radius:4px; padding:12px; color:#fff;
+        font-family:'Press Start 2P',cursive; font-size:7pt; text-shadow:1px 1px 0px #000; cursor:pointer;
+        text-transform:uppercase; box-shadow:0 4px 0 #0d3a1b; transition: transform .1s;
+    }
+    .btn-install:active { transform: translateY(2px); box-shadow:0 2px 0 #0d3a1b; }
+    .install-hint {
+        display:none; margin-top:10px; padding:10px; border:2px solid var(--ouro3); border-radius:6px;
+        background:#1c132b; color:var(--ouro); font-size:8pt; line-height:1.5; text-align:center;
+    }
+
     /* ---------- TOOLBAR (mês + sync) ---------- */
     .toolbar { display:flex; gap:8px; align-items:center; }
     .month-select {
@@ -334,6 +346,9 @@
         </div>
 
         <div class="footer-note">"Somente os dignos de selar a correia cruzarão este portal..."</div>
+
+        <button id="btn-install-app" class="btn-install" onclick="instalarApp()">📲 Baixar o aplicativo no celular</button>
+        <div id="install-hint" class="install-hint"></div>
     </div>
 
     <!-- ========================================================= -->
@@ -1460,6 +1475,57 @@ else iniciar();
   // Registro do PWA (service worker). Só funciona por https:// (GitHub Pages) — em file:// é ignorado.
   if('serviceWorker' in navigator){
     window.addEventListener('load', ()=>{ navigator.serviceWorker.register('./sw.js').catch(()=>{}); });
+  }
+
+  // ===== Instalação do app no celular (PWA) =====
+  let deferredInstallPrompt = null;
+  const btnInstall = document.getElementById('btn-install-app');
+  const installHint = document.getElementById('install-hint');
+
+  function appJaInstalado(){
+    return window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
+  }
+  function ehIOS(){
+    return /iphone|ipad|ipod/i.test(navigator.userAgent) && !window.MSStream;
+  }
+
+  // Se já estiver rodando como app instalado, não mostra o botão.
+  if(appJaInstalado() && btnInstall){ btnInstall.style.display = 'none'; }
+
+  // Captura o evento nativo do Android/Chrome.
+  window.addEventListener('beforeinstallprompt', (e)=>{
+    e.preventDefault();
+    deferredInstallPrompt = e;
+  });
+
+  // Depois de instalar, esconde o botão.
+  window.addEventListener('appinstalled', ()=>{
+    deferredInstallPrompt = null;
+    if(btnInstall) btnInstall.style.display = 'none';
+    if(installHint){ installHint.style.display='none'; }
+  });
+
+  async function instalarApp(){
+    // Android / Chrome: usa o prompt nativo quando disponível.
+    if(deferredInstallPrompt){
+      deferredInstallPrompt.prompt();
+      try{ await deferredInstallPrompt.userChoice; }catch(_){}
+      deferredInstallPrompt = null;
+      return;
+    }
+    // iPhone / iPad (Safari): não há prompt automático — mostra o passo a passo.
+    if(ehIOS()){
+      installHint.innerHTML = '🍎 No iPhone/iPad: toque no botão <b>Compartilhar</b> (⬆️) do Safari e escolha <b>"Adicionar à Tela de Início"</b>.';
+      installHint.style.display = 'block';
+      return;
+    }
+    // Outros casos (app já instalado, navegador sem suporte ou já aberto como app).
+    if(appJaInstalado()){
+      installHint.innerHTML = '✅ O app já está instalado neste dispositivo.';
+    } else {
+      installHint.innerHTML = '📲 Para instalar: abra o menu do navegador (⋮) e escolha <b>"Instalar aplicativo"</b> ou <b>"Adicionar à tela inicial"</b>.';
+    }
+    installHint.style.display = 'block';
   }
 </script>
 </body>
